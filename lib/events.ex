@@ -4,6 +4,16 @@ defmodule Events do
   use GenServer
 
   def init(state) do
+    :mnesia.create_table(
+      Events,
+      attributes: [
+        :time,
+        :action,
+        :branch,
+        :id
+      ]
+    )
+
     {:ok, state}
   end
 
@@ -66,4 +76,54 @@ defmodule Events.Route do
 
     {:ok, req, state, :hibernate}
   end
+end
+
+defmodule Events.Store do
+  @moduledoc false
+
+  @db Events
+  alias :mnesia, as: Mnesia
+
+  def put(action, branch, id) do
+    time = :os.system_time(:millisecond)
+    event = {@db, time, action, branch, id}
+
+    case fn -> Mnesia.write(event) end
+         |> Mnesia.transaction() do
+      {:atomic, :ok} -> {:ok, time}
+      _ -> :error
+    end
+  end
+
+  def get(from \\ 0) do
+    # week_ago = 7 * 24 * 60 * 60 * 1000
+
+    fn ->
+      Mnesia.select(
+        @db,
+        [
+          {
+            {@db, :"$1", :"$2", :"$3", :"$4"},
+            [{:>, :"$1", from}],
+            [:"$$"]
+          }
+        ]
+      )
+    end
+    |> Mnesia.transaction()
+  end
+
+  # def get(id) do
+  #   case @db |> Dets.lookup(id) do
+  #     [{_, :active, json} | _] -> {:ok, json}
+  #     _ -> {:error, "\"User not exists or blocked\""}
+  #   end
+  # end
+
+  # def put(user) do
+  #   case to_json(user) do
+  #     {:ok, json} -> @db |> Dets.insert({user["id"], :active, json})
+  #     _ -> :error
+  #   end
+  # end
 end

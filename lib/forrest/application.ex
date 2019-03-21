@@ -3,6 +3,7 @@ defmodule Forrest.Application do
 
   use Application
   import Supervisor.Spec, only: [worker: 2]
+  alias :mnesia, as: Mnesia
 
   def start(_type, _args) do
     children = [
@@ -14,8 +15,10 @@ defmodule Forrest.Application do
       name: Forrest.Supervisor
     ]
 
+    # Forrest.Auth.init()
+    Mnesia.create_schema(node())
+    Mnesia.start()
     Router.start()
-    Forrest.Auth.init()
     Supervisor.start_link(children, opts)
   end
 end
