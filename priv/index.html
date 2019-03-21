@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type="text/javascript">
+			function ready() {
+				if (!!window.EventSource) {
+					setupEventSource();
+				} else {
+					document.getElementById('status').innerHTML =
+						"Sorry but your browser doesn't support the EventSource API";
+				}
+			}
+
+			function setupEventSource() {
+				var source = new EventSource('/events');
+
+				source.onmessage = function(e) {
+				  console.log(e);
+				};
+
+				source.addEventListener('message', function(event) {
+					addStatus("message: '" + event.data + "'");
+				}, false);
+
+				source.addEventListener('open', function(event) {
+					console.log('eventsource connected.')
+				}, false);
+
+				source.addEventListener('error', function(event) {
+					if (event.eventPhase == EventSource.CLOSED) {
+						console.log('eventsource was closed.')
+					}
+				}, false);
+			}
+
+			function addStatus(text) {
+				document.getElementById('status').innerHTML
+				= document.getElementById('status').innerHTML
+				+ text + "<br/>";
+			}
+		</script>
+	</head>
+	<body onload="ready();">
+		Hi!
+		<div id="status"></div>
+	</body>
+</html>
