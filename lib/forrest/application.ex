@@ -16,7 +16,7 @@ defmodule Forrest.Application do
     ]
 
     # Forrest.Auth.init()
-    Mnesia.create_schema(node())
+    Mnesia.create_schema([node()])
     Mnesia.start()
     Router.start()
     Supervisor.start_link(children, opts)
