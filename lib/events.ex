@@ -1,9 +1,11 @@
+require Logger
+
 defmodule Events do
   @moduledoc false
 
   use GenServer
   import GenServer, only: [cast: 2]
-  import Process, only: [alive?: 1]
+  import Process, only: [alive?: 1, send_after: 3]
 
   @event [:time, :action, :branch, :id, :prev]
 
@@ -17,10 +19,12 @@ defmodule Events do
       ]
     )
 
+    send_after(:events, :garbage, 60_000)
+    Logger.info("Events module started")
     {:ok, state}
   end
 
-  def start_link(state) do
+  def start_link(state \\ []) do
     GenServer.start_link(
       __MODULE__,
       state,
@@ -28,14 +32,23 @@ defmodule Events do
     )
   end
 
+  def handle_info(:garbage, state) do
+    Events.Store.garbage()
+    Logger.info("Events garbage collected")
+    send_after(:events, :garbage, 3_600_000)
+    {:noreply, state}
+  end
+
   def handle_cast({:subscribe, conn}, state) do
+    Logger.info("Events subscribers connected")
     {:noreply, [conn | state]}
   end
 
-  def handle_cast({:message, msg}, state) do
+  def handle_cast({:event, msg}, state) do
+    Logger.info("Events cast: #{msg}")
     alive =
       for conn <- state, alive?(conn) do
-        send(conn, {:message, msg})
+        send(conn, {:event, msg})
         conn
       end
 
@@ -63,7 +76,7 @@ defmodule Events.Route do
     {:cowboy_loop, req, state, :hibernate}
   end
 
-  def info({:message, msg}, req, state) do
+  def info({:event, msg}, req, state) do
     event = %{
       event: "message",
       data: msg
@@ -74,18 +87,22 @@ defmodule Events.Route do
   end
 end
 
-# week_ago = 7 * 24 * 60 * 60 * 1000
-
 defmodule Events.Store do
   @moduledoc false
 
-  @db :events
-  @all_fields [:"$$"]
-  @db_struct {@db, :"$1", :"$2", :"$3", :"$4", :"$5"}
   alias :mnesia, as: Mnesia
 
+  @db :events
+  @ids_list [:"$1"]
+  @all_fields [:"$$"]
+  @db_struct {@db, :"$1", :"$2", :"$3", :"$4", :"$5"}
+
+  defp now do
+    :os.system_time(:millisecond)
+  end
+
   def put(action, branch, id) do
-    time = :os.system_time(:millisecond)
+    time = now()
 
     fun = fn ->
       prev = Mnesia.last(@db)
@@ -100,16 +117,39 @@ defmodule Events.Store do
     end
   end
 
-  def get(from \\ 0) do
+  defp select(matcher, fiels \\ @all_fields) do
     {:atomic, result} =
       fn ->
         Mnesia.select(
           @db,
-          [{@db_struct, [{:>, :"$1", from}], @all_fields}]
+          [{@db_struct, matcher, fiels}]
         )
       end
       |> Mnesia.transaction()
 
     result
+  end
+
+  def get(from \\ 0) do
+    [{:>, :"$1", from}]
+    |> select()
+  end
+
+  def history(id) do
+    [{:==, :"$4", id}]
+    |> select()
+  end
+
+  def garbage() do
+    week_ago = now() - 7 * 24 * 60 * 60 * 1000
+
+    fn ->
+      Mnesia.select(
+        @db,
+        [{@db_struct, [{:<, :"$1", week_ago}], @ids_list}]
+      )
+      |> Enum.each(&Mnesia.delete({@db, &1}))
+    end
+    |> Mnesia.transaction()
   end
 end
