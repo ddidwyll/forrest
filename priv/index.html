@@ -12,7 +12,9 @@
 			}
 
 			function setupEventSource() {
-				var source = new EventSource('/events');
+			  var uri = '/events/user@' + location.hash.replace('#', '')
+			  console.log(uri)
+				var source = new EventSource(uri);
 
 				source.onmessage = function(e) {
 				  console.log(e);

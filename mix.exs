@@ -27,7 +27,7 @@ defmodule Forrest.MixProject do
       {:jason, "~> 1.1"},
       # {:sse, "~> 0.4.0"},
       # {:event_bus, "~> 1.6"},
-      {:uuid, "~> 1.1"}
+      {:uuid, "~> 1.1"},
       # {:lasse, "~> 1.2"},
       # {:access_pass, "~> 1.0"}
       # {:ueberauth, "~> 0.6"},
@@ -45,7 +45,7 @@ defmodule Forrest.MixProject do
       # {:vex, "~> 0.8.0"},
       # {:guardian, "~> 1.2"},
       # {:benchee, "~> 0.9", only: [:dev]},
-      # {:dialyxir, "~> 0.4", only: [:dev]},
+      {:dialyxir, "~> 0.4", only: [:dev]}
       # {:ex_doc, "~> 0.19.3", only: [:dev]}
     ]
   end

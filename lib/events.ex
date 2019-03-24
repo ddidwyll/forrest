@@ -1,8 +1,7 @@
-require Logger
-
 defmodule Events do
   @moduledoc false
 
+  require Logger
   use GenServer
   import GenServer, only: [cast: 2]
   import Process, only: [alive?: 1, send_after: 3]
@@ -20,7 +19,6 @@ defmodule Events do
     )
 
     send_after(:events, :garbage, 60_000)
-    Logger.info("Events module started")
     {:ok, state}
   end
 
@@ -32,31 +30,42 @@ defmodule Events do
     )
   end
 
-  def handle_info(:garbage, state) do
-    Events.Store.garbage()
-    Logger.info("Events garbage collected")
-    send_after(:events, :garbage, 3_600_000)
-    {:noreply, state}
-  end
-
   def handle_cast({:subscribe, conn}, state) do
-    Logger.info("Events subscribers connected")
-    {:noreply, [conn | state]}
+    {pid, user, last_id} = conn
+
+    for event <- Events.Store.get(last_id) do
+      send(pid, {:event, event})
+    end
+
+    {:noreply, [{pid, user} | state]}
   end
 
-  def handle_cast({:event, msg}, state) do
-    Logger.info("Events cast: #{msg}")
+  def handle_cast({:event, event}, state) do
     alive =
-      for conn <- state, alive?(conn) do
-        send(conn, {:event, msg})
+      for {pid, _} = conn <- state, alive?(pid) do
+        send(pid, {:event, event})
         conn
       end
 
     {:noreply, alive}
   end
 
-  def subscribe(pid), do: cast(:events, {:subscribe, pid})
-  def cast(text), do: cast(:events, {:message, text})
+  def handle_call(:online, _, state) do
+    users = for {_, user} <- state, do: user
+    {:reply, Enum.uniq(users), state}
+  end
+
+  def subscribe(conn),
+    do: cast(:events, {:subscribe, conn})
+
+  def event(event),
+    do: cast(:events, {:event, event})
+
+  def handle_info(:garbage, state) do
+    Events.Store.garbage()
+    send_after(:events, :garbage, 3_600_000)
+    {:noreply, state}
+  end
 end
 
 defmodule Events.Route do
@@ -71,19 +80,29 @@ defmodule Events.Route do
       "connection" => "keep-alive"
     }
 
-    Events.subscribe(self())
+    user = req0.bindings[:user]
+    last_id = last_id(req0) || 0
+    Events.subscribe({self(), user, last_id})
     req = Request.stream_reply(200, headers, req0)
     {:cowboy_loop, req, state, :hibernate}
   end
 
-  def info({:event, msg}, req, state) do
+  def info({:event, data}, req, state) do
+    [time, action, branch, id, _] = data
+
     event = %{
-      event: "message",
-      data: msg
+      id: "#{time}",
+      event: action,
+      data: "#{id}@#{branch}"
     }
 
     Request.stream_events(event, :nofin, req)
     {:ok, req, state, :hibernate}
+  end
+
+  defp last_id(req) do
+    (req.headers["last-event-id"] || req.bindings[:last_id] || "0")
+    |> String.to_integer()
   end
 end
 
@@ -93,8 +112,8 @@ defmodule Events.Store do
   alias :mnesia, as: Mnesia
 
   @db :events
-  @ids_list [:"$1"]
-  @all_fields [:"$$"]
+  @ids [:"$1"]
+  @all [:"$$"]
   @db_struct {@db, :"$1", :"$2", :"$3", :"$4", :"$5"}
 
   defp now do
@@ -117,7 +136,7 @@ defmodule Events.Store do
     end
   end
 
-  defp select(matcher, fiels \\ @all_fields) do
+  defp select(matcher, fiels \\ @all) do
     {:atomic, result} =
       fn ->
         Mnesia.select(
@@ -135,18 +154,13 @@ defmodule Events.Store do
     |> select()
   end
 
-  def history(id) do
-    [{:==, :"$4", id}]
-    |> select()
-  end
-
   def garbage() do
     week_ago = now() - 7 * 24 * 60 * 60 * 1000
 
     fn ->
       Mnesia.select(
         @db,
-        [{@db_struct, [{:<, :"$1", week_ago}], @ids_list}]
+        [{@db_struct, [{:<, :"$1", week_ago}], @ids}]
       )
       |> Enum.each(&Mnesia.delete({@db, &1}))
     end

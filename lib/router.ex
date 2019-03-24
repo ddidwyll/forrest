@@ -14,7 +14,7 @@ defmodule Router do
       {:_,
        [
          {"/", :cowboy_static, {:file, "./priv/index.html"}},
-         {"/events", Events.Route, []}
+         {"/events/:user/[:last_id]", Events.Route, []}
        ]}
     ])
   end
