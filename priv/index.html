@@ -12,11 +12,13 @@
 			}
 
 			function setupEventSource() {
-			  var uri = '/events/user@' + location.hash.replace('#', '')
-			  console.log(uri)
+			  var lastId = localStorage.getItem('lastId') || ''
+			  var uri = '/events/user@' + location.hash.replace('#', '') + '/' + lastId
 				var source = new EventSource(uri);
 
 				source.onmessage = function(e) {
+				  localStorage.setItem(e.lastEventId, e.data)
+				  localStorage.setItem('lastId', e.lastEventId)
 				  console.log(e);
 				};
 

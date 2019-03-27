@@ -1,12 +1,19 @@
 defmodule Events do
   @moduledoc false
 
-  require Logger
   use GenServer
-  import GenServer, only: [cast: 2]
-  import Process, only: [alive?: 1, send_after: 3]
+  alias Events.Store
 
-  @event [:time, :action, :branch, :id, :prev]
+  import Process,
+    only: [alive?: 1, send_after: 3]
+
+  import GenServer,
+    only: [cast: 2, call: 2, start_link: 3]
+
+  import Enum,
+    only: [uniq: 1, find_value: 3]
+
+  @event [:time, :action, :branch, :id]
 
   def init(state) do
     :mnesia.create_table(
@@ -22,10 +29,10 @@ defmodule Events do
     {:ok, state}
   end
 
-  def start_link(state \\ []) do
-    GenServer.start_link(
+  def start_link() do
+    start_link(
       __MODULE__,
-      state,
+      [],
       name: :events
     )
   end
@@ -33,36 +40,43 @@ defmodule Events do
   def handle_cast({:subscribe, conn}, state) do
     {pid, user, last_id} = conn
 
-    for event <- Events.Store.get(last_id) do
+    for event <- Store.get(last_id) do
       send(pid, {:event, event})
     end
 
     {:noreply, [{pid, user} | state]}
   end
 
-  def handle_cast({:event, event}, state) do
+  def handle_call({:event, action, branch, id}, _, state) do
+    {:ok, time} = Store.put(action, branch, id)
+
     alive =
       for {pid, _} = conn <- state, alive?(pid) do
-        send(pid, {:event, event})
+        send(pid, {:event, [time, action, branch, id]})
         conn
       end
 
-    {:noreply, alive}
+    {:reply, time, alive}
   end
 
   def handle_call(:online, _, state) do
     users = for {_, user} <- state, do: user
-    {:reply, Enum.uniq(users), state}
+    {:reply, uniq(users), state}
   end
 
-  def subscribe(conn),
-    do: cast(:events, {:subscribe, conn})
+  def subscribe(pid, user, last_id),
+    do: cast(:events, {:subscribe, {pid, user, last_id}})
 
-  def event(event),
-    do: cast(:events, {:event, event})
+  def new(action, branch, id),
+    do: call(:events, {:event, action, branch, id})
+
+  def online(), do: call(:events, :online)
+
+  def online(id),
+    do: online() |> find_value(false, &(&1 === id))
 
   def handle_info(:garbage, state) do
-    Events.Store.garbage()
+    Store.garbage()
     send_after(:events, :garbage, 3_600_000)
     {:noreply, state}
   end
@@ -71,7 +85,11 @@ end
 defmodule Events.Route do
   @moduledoc false
 
-  alias :cowboy_req, as: Request
+  import :cowboy_req,
+    only: [stream_reply: 3, stream_events: 3]
+
+  import Events,
+    only: [subscribe: 3]
 
   def init(req0, state) do
     headers = %{
@@ -81,28 +99,27 @@ defmodule Events.Route do
     }
 
     user = req0.bindings[:user]
-    last_id = last_id(req0) || 0
-    Events.subscribe({self(), user, last_id})
-    req = Request.stream_reply(200, headers, req0)
+    last_id = last_id(req0) || ""
+    subscribe(self(), user, last_id)
+    req = stream_reply(200, headers, req0)
     {:cowboy_loop, req, state, :hibernate}
   end
 
   def info({:event, data}, req, state) do
-    [time, action, branch, id, _] = data
+    [time, action, branch, id] = data
 
     event = %{
-      id: "#{time}",
+      id: time,
       event: action,
       data: "#{id}@#{branch}"
     }
 
-    Request.stream_events(event, :nofin, req)
+    stream_events(event, :nofin, req)
     {:ok, req, state, :hibernate}
   end
 
   defp last_id(req) do
-    (req.headers["last-event-id"] || req.bindings[:last_id] || "0")
-    |> String.to_integer()
+    req.headers["last-event-id"] || req.bindings[:last_id]
   end
 end
 
@@ -110,23 +127,22 @@ defmodule Events.Store do
   @moduledoc false
 
   alias :mnesia, as: Mnesia
+  import Enum, only: [each: 2]
 
   @db :events
   @ids [:"$1"]
   @all [:"$$"]
-  @db_struct {@db, :"$1", :"$2", :"$3", :"$4", :"$5"}
+  @db_struct {@db, :"$1", :"$2", :"$3", :"$4"}
 
   defp now do
     :os.system_time(:millisecond)
   end
 
   def put(action, branch, id) do
-    time = now()
+    time = now() |> to_string
 
     fun = fn ->
-      prev = Mnesia.last(@db)
-
-      {@db, time, action, branch, id, prev}
+      {@db, time, action, branch, id}
       |> Mnesia.write()
     end
 
@@ -136,12 +152,12 @@ defmodule Events.Store do
     end
   end
 
-  defp select(matcher, fiels \\ @all) do
+  defp select(matcher, fields \\ @all) do
     {:atomic, result} =
       fn ->
         Mnesia.select(
           @db,
-          [{@db_struct, matcher, fiels}]
+          [{@db_struct, matcher, fields}]
         )
       end
       |> Mnesia.transaction()
@@ -149,20 +165,29 @@ defmodule Events.Store do
     result
   end
 
-  def get(from \\ 0) do
+  def get(from \\ "") do
     [{:>, :"$1", from}]
     |> select()
   end
 
+  def subscribers(current) do
+    prev =
+      [{:==, :"$2", "online"}]
+      |> select()
+
+  end
+
   def garbage() do
-    week_ago = now() - 7 * 24 * 60 * 60 * 1000
+    day_ago =
+      (now() - 24 * 60 * 60 * 1000)
+      |> to_string()
 
     fn ->
       Mnesia.select(
         @db,
-        [{@db_struct, [{:<, :"$1", week_ago}], @ids}]
+        [{@db_struct, [{:<, :"$1", day_ago}], @ids}]
       )
-      |> Enum.each(&Mnesia.delete({@db, &1}))
+      |> each(&Mnesia.delete({@db, &1}))
     end
     |> Mnesia.transaction()
   end
