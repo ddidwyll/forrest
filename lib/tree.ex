@@ -1,15 +1,9 @@
 defmodule Tree do
   @moduledoc false
 
-  use GenServer
-  alias Tree.Store
-
-  import GenServer,
-    only: [cast: 2, call: 2, start_link: 3]
-
   @branch [:id, :uid, :gid, :status, :upd, :json]
 
-  def init(state) do
+  def init() do
     :mnesia.create_table(
       :tree,
       [
@@ -18,33 +12,108 @@ defmodule Tree do
         {:attributes, @branch}
       ]
     )
-
-    {:ok, state}
-  end
-
-  def start_link() do
-    start_link(
-      __MODULE__,
-      [],
-      name: :tree
-    )
   end
 end
 
 defmodule Tree.Route do
   @moduledoc false
 
-  import :cowboy_req,
-    only: [stream_reply: 3, stream_events: 3]
+  alias Tree.Rest
+  import :cowboy_req, only: [reply: 4]
 
-  @headers %{
-    "content-type" => "text/event-stream",
-    "cache-control" => "no-cache",
-    "connection" => "keep-alive"
+  @methods [
+    "OPTIONS",
+    "POST",
+    "PATCH",
+    "GET",
+    "DELETE"
+  ]
+
+  @to_json {
+    {"application", "json", :*},
+    :to_json
+  }
+  
+  @from_json {
+    {"application", "json", :*},
+    :from_json
   }
 
-  def init(req0, state) do
-    {:cowboy_loop, req, state, :hibernate}
+  @utf8 "utf-8"
+
+  @headers %{
+    "server" => "Forrest"
+  }
+
+  def init(req, _) do
+    case req.method do
+      "POST" -> Rest.post(req)
+      "PATCH" -> Rest.patch(req)
+      "GET" -> Rest.get(req)
+      "OPTIONS" -> options(req)
+    end
+  end
+
+  def content_types_provided(req, state) do
+    {[@to_json], req, state}
+  end
+
+  def content_types_accepted(req, state) do
+    {[@from_json], req, state}
+  end
+
+  def allowed_methods(req, state) do
+    {@methods, req, state}
+  end
+
+  def charsets_provided(req, state) do
+    {[@utf8], req, state}
+  end
+
+  def to_json(req, body)
+      when is_list(body) do
+    json = "[" <> Enum.join(body, ",") <> "]"
+    {json, req, body}
+  end
+  
+  def from_json(req0, body) do
+    req = :cowboy_req.set_resp_body(body, req0)
+    {true, req, body}
+  end
+
+  def options(req0) do
+    branch = req0.bindings.branch
+
+    headers = %{
+      "server" => "Forrest",
+      "ddidwyll" => "gmail.com"
+    }
+
+    schema =
+      Forrest.schema(branch)
+      |> Jason.encode!()
+
+    req = reply(200, headers, schema, req0)
+    {:ok, req, []}
+  end
+end
+
+defmodule Tree.Rest do
+  @moduledoc false
+
+  def post(req) do
+    message = ["P", "O", "S", "T"]
+    {:cowboy_rest, req, message}
+  end
+
+  def patch(req) do
+    message = "PATCH"
+    {:cowboy_rest, req, message}
+  end
+
+  def get(req) do
+    body = [1, 2, 3, 4]
+    {:cowboy_rest, req, body}
   end
 end
 

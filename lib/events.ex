@@ -71,9 +71,7 @@ defmodule Events do
     do: call(:events, {:event, action, branch, id})
 
   def online(), do: call(:events, :online)
-
-  def online(id),
-    do: online() |> find_value(false, &(&1 === id))
+  def online(id), do: id in online()
 
   def handle_info(:garbage, state) do
     Store.garbage()
@@ -91,17 +89,17 @@ defmodule Events.Route do
   import Events,
     only: [subscribe: 3]
 
-  def init(req0, state) do
-    headers = %{
-      "content-type" => "text/event-stream",
-      "cache-control" => "no-cache",
-      "connection" => "keep-alive"
-    }
+  @headers %{
+    "content-type" => "text/event-stream",
+    "cache-control" => "no-cache",
+    "connection" => "keep-alive"
+  }
 
+  def init(req0, state) do
     user = req0.bindings[:user]
     last_id = last_id(req0) || ""
     subscribe(self(), user, last_id)
-    req = stream_reply(200, headers, req0)
+    req = stream_reply(200, @headers, req0)
     {:cowboy_loop, req, state, :hibernate}
   end
 
@@ -168,13 +166,6 @@ defmodule Events.Store do
   def get(from \\ "") do
     [{:>, :"$1", from}]
     |> select()
-  end
-
-  def subscribers(current) do
-    prev =
-      [{:==, :"$2", "online"}]
-      |> select()
-
   end
 
   def garbage() do

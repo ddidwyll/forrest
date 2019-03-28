@@ -1,18 +1,48 @@
 defmodule Forrest do
-  @moduledoc """
-  Documentation for Forrest.
-  """
+  @moduledoc false
 
-  @doc """
-  Hello world.
+  @deal %{
+    title: "deal",
+    titles: "deals",
+    leafs: %{
+      "created" => %{
+        title: "created",
+        type: :server_time,
+        default: :not_null,
+        freeze: true
+      },
+      "company" => %{
+        title: "company",
+        type: :string,
+        default: :not_null,
+        max: 80
+      },
+      "value" => %{
+        title: "value",
+        type: :number,
+        default: 0
+      }
+    },
+    rules: %{
+      get_own: :user,
+      get_grp: :user,
+      get_all: :user,
+      post_own: :user,
+      post_grp: :user,
+      patch_own: :user,
+      patch_grp: :manager,
+      patch_all: :admin,
+      delete_own: :manager,
+      delete_grp: :manager,
+      delete_all: :admin
+    }
+  }
 
-  ## Examples
+  @branches %{
+    "deal" => @deal
+  }
 
-      iex> Forrest.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  def schema(branch) do
+    @branches[branch]
   end
 end
