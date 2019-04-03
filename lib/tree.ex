@@ -32,20 +32,27 @@ defmodule Tree.Route do
     "DELETE"
   ]
 
+  @application_json {
+    "application",
+    "json",
+    :*
+  }
+
   @to_json {
-    {"application", "json", :*},
+    @application_json,
     :to_json
   }
 
   @from_json {
-    {"application", "json", :*},
+    @application_json,
     :from_json
   }
 
   @utf8 "utf-8"
 
   @headers %{
-    "server" => "Forrest"
+    "server" => "forrest",
+    "github" => "ddidwyll/forrest"
   }
 
   def init(req, opts) do
@@ -101,7 +108,7 @@ defmodule Tree.Route do
 
     req =
       if !state.schema do
-        set_resp_body("Branch not exists", req0)
+        set_resp_body("\"Branch not exists\"", req0)
       else
         req0
       end
@@ -122,40 +129,11 @@ defmodule Tree.Route do
   end
 
   def options(req0, state) do
-    headers = %{
-      "server" => "Forrest",
-      "ddidwyll" => "gmail.com"
-    }
-
     json = Jason.encode!(state.schema)
-    req = reply(200, headers, json, req0)
+    req = reply(200, @headers, json, req0)
     {:ok, req, []}
   end
 end
-
-# defmodule Tree.Rest do
-#   @moduledoc false
-
-#   require Logger
-
-#   def post(req) do
-#     Logger.info("post")
-#     message = ["P", "O", "S", "T"]
-#     {:cowboy_rest, req, message}
-#   end
-
-#   def patch(req) do
-#     Logger.info("patch")
-#     message = "PATCH"
-#     {:cowboy_rest, req, message}
-#   end
-
-#   def get(req) do
-#     Logger.info("get")
-#     body = [1, 2, 3, 4]
-#     {:cowboy_rest, req, body}
-#   end
-# end
 
 defmodule Tree.Store do
   @moduledoc false
@@ -163,7 +141,7 @@ defmodule Tree.Store do
   alias :mnesia, as: Mnesia
   import Enum, only: [each: 2]
 
-  @db :events
+  @db :tree
   @ids [:"$1"]
   @all [:"$$"]
   @db_struct {@db, :"$1", :"$2", :"$3", :"$4"}
@@ -218,4 +196,7 @@ defmodule Tree.Store do
     end
     |> Mnesia.transaction()
   end
+end
+
+defmodule Tree.Validator do
 end
