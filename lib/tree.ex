@@ -1,7 +1,14 @@
 defmodule Tree do
   @moduledoc false
 
-  @branch [:id, :uid, :gid, :status, :upd, :json]
+  @branch [
+    :id,
+    :uid,
+    :gid,
+    :status,
+    :upd,
+    :json
+  ]
 
   def init() do
     :mnesia.create_table(
@@ -9,6 +16,15 @@ defmodule Tree do
       [
         {:disc_copies, [node()]},
         {:type, :set},
+        {:attributes, @branch}
+      ]
+    )
+
+    :mnesia.create_table(
+      :bag,
+      [
+        {:disc_copies, [node()]},
+        {:type, :bag},
         {:attributes, @branch}
       ]
     )
@@ -136,67 +152,122 @@ defmodule Tree.Route do
 end
 
 defmodule Tree.Store do
-  @moduledoc false
+  # @moduledoc false
 
-  alias :mnesia, as: Mnesia
-  import Enum, only: [each: 2]
+  # alias :mnesia, as: Mnesia
+  # import Enum, only: [each: 2]
 
-  @db :tree
-  @ids [:"$1"]
-  @all [:"$$"]
-  @db_struct {@db, :"$1", :"$2", :"$3", :"$4"}
+  # @db :tree
+  # @ids [:"$1"]
+  # @all [:"$$"]
+  # @db_struct {@db, :"$1", :"$2", :"$3", :"$4"}
 
-  defp now do
-    :os.system_time(:millisecond)
-  end
+  # defp now do
+  #   :os.system_time(:millisecond)
+  # end
 
-  def put(action, branch, id) do
-    time = now() |> to_string
+  # def put(action, branch, id) do
+  #   time = now() |> to_string
 
-    fun = fn ->
-      {@db, time, action, branch, id}
-      |> Mnesia.write()
-    end
+  #   fun = fn ->
+  #     {@db, time, action, branch, id}
+  #     |> Mnesia.write()
+  #   end
 
-    case Mnesia.transaction(fun) do
-      {:atomic, :ok} -> {:ok, time}
-      _ -> :error
-    end
-  end
+  #   case Mnesia.transaction(fun) do
+  #     {:atomic, :ok} -> {:ok, time}
+  #     _ -> :error
+  #   end
+  # end
 
-  defp select(matcher, fields \\ @all) do
-    {:atomic, result} =
-      fn ->
-        Mnesia.select(
-          @db,
-          [{@db_struct, matcher, fields}]
-        )
-      end
-      |> Mnesia.transaction()
+  # defp select(matcher, fields \\ @all) do
+  #   {:atomic, result} =
+  #     fn ->
+  #       Mnesia.select(
+  #         @db,
+  #         [{@db_struct, matcher, fields}]
+  #       )
+  #     end
+  #     |> Mnesia.transaction()
 
-    result
-  end
+  #   result
+  # end
 
-  def get(from \\ "") do
-    [{:>, :"$1", from}]
-    |> select()
-  end
+  # def get(from \\ "") do
+  #   [{:>, :"$1", from}]
+  #   |> select()
+  # end
 
-  def garbage() do
-    day_ago =
-      (now() - 24 * 60 * 60 * 1000)
-      |> to_string()
+  # def garbage() do
+  #   day_ago =
+  #     (now() - 24 * 60 * 60 * 1000)
+  #     |> to_string()
 
-    fn ->
-      Mnesia.select(
-        @db,
-        [{@db_struct, [{:<, :"$1", day_ago}], @ids}]
-      )
-      |> each(&Mnesia.delete({@db, &1}))
-    end
-    |> Mnesia.transaction()
-  end
+  #   fn ->
+  #     Mnesia.select(
+  #       @db,
+  #       [{@db_struct, [{:<, :"$1", day_ago}], @ids}]
+  #     )
+  #     |> each(&Mnesia.delete({@db, &1}))
+  #   end
+  #   |> Mnesia.transaction()
+  # end
 end
 
-defmodule Tree.Validator do
+defmodule Validator do
+  @moduledoc false
+
+  import Map, only: [take: 2, drop: 2, keys: 1, values: 1]
+  import Enum, only: [count: 1, any?: 1, join: 2]
+  import String, only: [capitalize: 1]
+  import Regex, only: [compile!: 1]
+
+  defp empty?(val) when is_map(val) or is_list(val), do: count(val) == 0
+  defp empty?(val) when is_binary(val), do: val == ""
+  defp empty?(val) when is_nil(val), do: true
+  defp empty?(_), do: false
+
+  defp len(val) when is_map(val) or is_list(val), do: count(val)
+  defp len(val) when is_binary(val), do: String.length(val)
+  defp len(val) when is_number(val), do: val
+  defp len(_), do: 0
+
+  defp wrong_type?(val, "integer") when is_integer(val), do: false
+  defp wrong_type?(val, "number") when is_number(val), do: false
+  defp wrong_type?(val, "string") when is_binary(val), do: false
+  defp wrong_type?(val, "array") when is_list(val), do: false
+  defp wrong_type?(val, "map") when is_map(val), do: false
+  defp wrong_type?(_, _), do: true
+
+  defp errors(model, schema) do
+    for {key, spec} <- schema["leafs"], into: %{} do
+      title = spec["title"] |> capitalize
+      type = spec["type"]
+      min = spec["min"]
+      max = spec["max"]
+      arr = spec["arr"]
+      val = model[key]
+      re = spec["re"]
+
+      cond do
+        wrong_type?(val, type) -> {title, "wrong format"}
+        spec["required"] && empty?(val) -> {title, "required"}
+        min && len(val) <= min -> {title, "too small (min: #{min})"}
+        max && len(val) >= max -> {title, "too large (max: #{max})"}
+        arr && !(val in arr) -> {title, "not in [#{join(arr, ", ")}]"}
+        re && !Regex.match?(compile!(re), val) -> {title, "not matched (#{re})"}
+        true -> {key, nil}
+      end
+    end
+  end
+
+  def process(model, schema) do
+    errors = errors(model, schema)
+
+    unless values(errors) |> any? do
+      {:ok, model |> take(keys(errors))}
+    else
+      {:error, errors |> drop(keys(model))}
+    end
+  end
 end

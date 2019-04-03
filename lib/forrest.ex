@@ -7,20 +7,21 @@ defmodule Forrest do
     "leafs" => %{
       "created" => %{
         "title" => "created",
-        "type" => "server_time",
-        "not_null" => true,
+        "type" => "integer",
+        "required" => true,
         "freeze" => true
       },
       "company" => %{
         "title" => "company",
         "type" => "string",
-        "not_null" => true,
-        "max" => 80
+        "required" => true,
+        "max" => 80,
+        "arr" => ["foo", "bar"]
       },
       "value" => %{
         "title" => "value",
-        "type" => "number",
-        "default" => 0
+        "type" => "integer",
+        "min" => 0
       }
     },
     "rules" => %{
