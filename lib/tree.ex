@@ -1,14 +1,7 @@
 defmodule Tree do
   @moduledoc false
 
-  @branch [
-    :id,
-    :uid,
-    :gid,
-    :status,
-    :upd,
-    :json
-  ]
+  @branch [:id, :uid, :gid, :status, :upd, :json]
 
   def init() do
     :mnesia.create_table(
@@ -73,6 +66,7 @@ defmodule Tree.Route do
 
   def init(req, opts) do
     state = %{
+      method: req.method,
       schema: schema(req.bindings.branch),
       id: req.bindings[:id],
       opts: opts,
@@ -80,7 +74,7 @@ defmodule Tree.Route do
       input: "empty"
     }
 
-    Logger.info("init, #{inspect(state.opts)}")
+    Logger.info("init, #{inspect(state)}")
     {:cowboy_rest, req, state}
   end
 
@@ -145,9 +139,10 @@ defmodule Tree.Route do
   end
 
   def options(req0, state) do
+    Logger.info("options")
     json = Jason.encode!(state.schema)
     req = reply(200, @headers, json, req0)
-    {:ok, req, []}
+    {:ok, req, state}
   end
 end
 
@@ -217,7 +212,7 @@ end
 defmodule Validator do
   @moduledoc false
 
-  import Map, only: [take: 2, drop: 2, keys: 1, values: 1]
+  import Map, only: [take: 2, drop: 2, keys: 1, values: 1, has_key?: 2]
   import Enum, only: [count: 1, any?: 1, join: 2]
   import String, only: [capitalize: 1]
   import Regex, only: [compile!: 1]
@@ -235,13 +230,15 @@ defmodule Validator do
   defp wrong_type?(val, "integer") when is_integer(val), do: false
   defp wrong_type?(val, "number") when is_number(val), do: false
   defp wrong_type?(val, "string") when is_binary(val), do: false
+  defp wrong_type?(val, "bool") when is_boolean(val), do: false
   defp wrong_type?(val, "array") when is_list(val), do: false
   defp wrong_type?(val, "map") when is_map(val), do: false
   defp wrong_type?(_, _), do: true
 
   defp errors(model, schema) do
     for {key, spec} <- schema["leafs"], into: %{} do
-      title = spec["title"] |> capitalize
+      title = (spec["title"] <> ":") |> capitalize
+      required = spec["required"]
       type = spec["type"]
       min = spec["min"]
       max = spec["max"]
@@ -250,18 +247,19 @@ defmodule Validator do
       re = spec["re"]
 
       cond do
-        wrong_type?(val, type) -> {title, "wrong format"}
-        spec["required"] && empty?(val) -> {title, "required"}
+        !has_key?(model, key) && !required -> {key, nil}
+        required && empty?(val) -> {title, "required"}
+        wrong_type?(val, type) -> {title, "must be #{type}"}
         min && len(val) <= min -> {title, "too small (min: #{min})"}
         max && len(val) >= max -> {title, "too large (max: #{max})"}
-        arr && !(val in arr) -> {title, "not in [#{join(arr, ", ")}]"}
-        re && !Regex.match?(compile!(re), val) -> {title, "not matched (#{re})"}
+        arr && val not in arr -> {title, "not in [#{join(arr, ", ")}]"}
+        re && !Regex.match?(compile!(re), val) -> {title, "not match (#{re})"}
         true -> {key, nil}
       end
     end
   end
 
-  def process(model, schema) do
+  def process(model, schema) when is_map(model) do
     errors = errors(model, schema)
 
     unless values(errors) |> any? do
@@ -270,4 +268,7 @@ defmodule Validator do
       {:error, errors |> drop(keys(model))}
     end
   end
+
+  def process(_, _),
+    do: {:error, %{"JSON:" => "wrong format"}}
 end
