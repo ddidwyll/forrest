@@ -15,7 +15,15 @@ defmodule Events do
 
   @event [:time, :action, :branch, :id]
 
-  def init(state) do
+  def start_link(_) do
+    start_link(
+      __MODULE__,
+      nil,
+      name: :events
+    )
+  end
+
+  def init(_) do
     :mnesia.create_table(
       :events,
       [
@@ -26,15 +34,7 @@ defmodule Events do
     )
 
     send_after(:events, :garbage, 60_000)
-    {:ok, state}
-  end
-
-  def start_link() do
-    start_link(
-      __MODULE__,
-      [],
-      name: :events
-    )
+    {:ok, []}
   end
 
   def handle_cast({:subscribe, conn}, state) do
@@ -109,7 +109,7 @@ defmodule Events.Route do
     event = %{
       id: time,
       event: action,
-      data: "#{id}@#{branch}"
+      data: id <> "@" <> branch
     }
 
     stream_events(event, :nofin, req)

@@ -2,25 +2,24 @@ defmodule Tree do
   @moduledoc false
 
   @branch [:id, :uid, :gid, :status, :upd, :json]
+  @other [:id, :uid, :gid, :status, :json]
+  @rel [:left, :right, :uid, :gid, :status, :json]
+
+  defp table(name, type, attrs) do
+    :mnesia.create_table(
+      name,
+      [
+        {:disc_copies, [node()]},
+        {:attributes, attrs},
+        {:type, type}
+      ]
+    )
+  end
 
   def init() do
-    :mnesia.create_table(
-      :tree,
-      [
-        {:disc_copies, [node()]},
-        {:type, :set},
-        {:attributes, @branch}
-      ]
-    )
-
-    :mnesia.create_table(
-      :bag,
-      [
-        {:disc_copies, [node()]},
-        {:type, :bag},
-        {:attributes, @branch}
-      ]
-    )
+    table(:tree, :set, @branch)
+    table(:bag, :bag, @other)
+    table(:rels, :bag, @rel)
   end
 end
 
@@ -30,8 +29,8 @@ defmodule Tree.Route do
   import :cowboy_req,
     only: [reply: 4, set_resp_body: 2]
 
-  import Forrest
-  require Logger
+  import Config, only: [schema: 1]
+  import Logger, only: [info: 1]
 
   @methods [
     "OPTIONS",
@@ -74,47 +73,47 @@ defmodule Tree.Route do
       input: "empty"
     }
 
-    Logger.info("init, #{inspect(state)}")
+    info("init, #{inspect(state)}")
     {:cowboy_rest, req, state}
   end
 
   def content_types_provided(req, state) do
-    Logger.info("content_types_provided, #{inspect(state.opts)}")
+    info("content_types_provided, #{inspect(state.opts)}")
     {[@to_json], req, state}
   end
 
   def content_types_accepted(req, state) do
-    Logger.info("content_types_accepted, #{inspect(state.opts)}")
+    info("content_types_accepted, #{inspect(state.opts)}")
     {[@from_json], req, state}
   end
 
   def allowed_methods(req, state) do
-    Logger.info("allowed_methods, #{inspect(state.opts)}")
+    info("allowed_methods, #{inspect(state.opts)}")
     {@methods, req, state}
   end
 
   def charsets_provided(req, state) do
-    Logger.info("charsets_provided, #{inspect(state.opts)}")
+    info("charsets_provided, #{inspect(state.opts)}")
     {[@utf8], req, state}
   end
 
   def delete_completed(req, state) do
-    Logger.info("delete_completed, #{inspect(state.opts)}")
+    info("delete_completed, #{inspect(state.opts)}")
     {false, req, state}
   end
 
   def delete_resource(req, state) do
-    Logger.info("delete_resource, #{inspect(state.opts)}")
+    info("delete_resource, #{inspect(state.opts)}")
     {false, req, state}
   end
 
   def forbidden(req, state) do
-    Logger.info("forbidden, #{inspect(state.opts)}")
+    info("forbidden, #{inspect(state.opts)}")
     {false, req, state}
   end
 
   def malformed_request(req0, state) do
-    Logger.info("malformed_request, #{inspect(state.opts)}")
+    info("malformed_request, #{inspect(state.opts)}")
 
     req =
       if !state.schema do
@@ -127,19 +126,19 @@ defmodule Tree.Route do
   end
 
   def to_json(req, state) do
-    Logger.info("to_json, #{inspect(state.output)}")
+    info("to_json, #{inspect(state.output)}")
     json = "[" <> Enum.join(state.output, ",") <> "]"
     {json, req, state}
   end
 
   def from_json(req0, state) do
-    Logger.info("from_json, #{inspect(state.input)}")
+    info("from_json, #{inspect(state.input)}")
     req = set_resp_body(state.input, req0)
     {true, req, state}
   end
 
   def options(req0, state) do
-    Logger.info("options")
+    info("options")
     json = Jason.encode!(state.schema)
     req = reply(200, @headers, json, req0)
     {:ok, req, state}
@@ -207,68 +206,4 @@ defmodule Tree.Store do
   #   end
   #   |> Mnesia.transaction()
   # end
-end
-
-defmodule Validator do
-  @moduledoc false
-
-  import Map, only: [take: 2, drop: 2, keys: 1, values: 1, has_key?: 2]
-  import Enum, only: [count: 1, any?: 1, join: 2]
-  import String, only: [capitalize: 1]
-  import Regex, only: [compile!: 1]
-
-  defp empty?(val) when is_map(val) or is_list(val), do: count(val) == 0
-  defp empty?(val) when is_binary(val), do: val == ""
-  defp empty?(val) when is_nil(val), do: true
-  defp empty?(_), do: false
-
-  defp len(val) when is_map(val) or is_list(val), do: count(val)
-  defp len(val) when is_binary(val), do: String.length(val)
-  defp len(val) when is_number(val), do: val
-  defp len(_), do: 0
-
-  defp wrong_type?(val, "integer") when is_integer(val), do: false
-  defp wrong_type?(val, "number") when is_number(val), do: false
-  defp wrong_type?(val, "string") when is_binary(val), do: false
-  defp wrong_type?(val, "bool") when is_boolean(val), do: false
-  defp wrong_type?(val, "array") when is_list(val), do: false
-  defp wrong_type?(val, "map") when is_map(val), do: false
-  defp wrong_type?(_, _), do: true
-
-  defp errors(model, schema) do
-    for {key, spec} <- schema["leafs"], into: %{} do
-      title = (spec["title"] <> ":") |> capitalize
-      required = spec["required"]
-      type = spec["type"]
-      min = spec["min"]
-      max = spec["max"]
-      arr = spec["arr"]
-      val = model[key]
-      re = spec["re"]
-
-      cond do
-        !has_key?(model, key) && !required -> {key, nil}
-        required && empty?(val) -> {title, "required"}
-        wrong_type?(val, type) -> {title, "must be #{type}"}
-        min && len(val) <= min -> {title, "too small (min: #{min})"}
-        max && len(val) >= max -> {title, "too large (max: #{max})"}
-        arr && val not in arr -> {title, "not in [#{join(arr, ", ")}]"}
-        re && !Regex.match?(compile!(re), val) -> {title, "not match (#{re})"}
-        true -> {key, nil}
-      end
-    end
-  end
-
-  def process(model, schema) when is_map(model) do
-    errors = errors(model, schema)
-
-    unless values(errors) |> any? do
-      {:ok, model |> take(keys(errors))}
-    else
-      {:error, errors |> drop(keys(model))}
-    end
-  end
-
-  def process(_, _),
-    do: {:error, %{"JSON:" => "wrong format"}}
 end

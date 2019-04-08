@@ -2,12 +2,12 @@ defmodule Forrest.Application do
   @moduledoc false
 
   use Application
-  import Supervisor.Spec, only: [worker: 2]
   alias :mnesia, as: Mnesia
 
-  def start(_type, _args) do
+  def start(_, _) do
     children = [
-      worker(Events, [])
+      Config,
+      Events
     ]
 
     opts = [
@@ -18,8 +18,9 @@ defmodule Forrest.Application do
     # Forrest.Auth.init()
     Mnesia.create_schema([node()])
     Mnesia.start()
+    {:ok, pid} = Supervisor.start_link(children, opts)
     Tree.init()
     Router.start()
-    Supervisor.start_link(children, opts)
+    {:ok, pid}
   end
 end
