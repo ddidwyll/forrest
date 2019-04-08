@@ -23,6 +23,7 @@ defmodule Events do
     )
   end
 
+  @impl true
   def init(_) do
     :mnesia.create_table(
       :events,
@@ -37,6 +38,7 @@ defmodule Events do
     {:ok, []}
   end
 
+  @impl true
   def handle_cast({:subscribe, conn}, state) do
     {pid, user, last_id} = conn
 
@@ -47,6 +49,7 @@ defmodule Events do
     {:noreply, [{pid, user} | state]}
   end
 
+  @impl true
   def handle_call({:event, action, branch, id}, _, state) do
     {:ok, time} = Store.put(action, branch, id)
 
@@ -59,6 +62,7 @@ defmodule Events do
     {:reply, time, alive}
   end
 
+  @impl true
   def handle_call(:online, _, state) do
     users = for {_, user} <- state, do: user
     {:reply, uniq(users), state}
@@ -73,6 +77,7 @@ defmodule Events do
   def online(), do: call(:events, :online)
   def online(id), do: id in online()
 
+  @impl true
   def handle_info(:garbage, state) do
     Store.garbage()
     send_after(:events, :garbage, 3_600_000)
@@ -82,6 +87,8 @@ end
 
 defmodule Events.Route do
   @moduledoc false
+
+  @behaviour :cowboy_loop
 
   import :cowboy_req,
     only: [stream_reply: 3, stream_events: 3]
@@ -95,6 +102,7 @@ defmodule Events.Route do
     "connection" => "keep-alive"
   }
 
+  @impl true
   def init(req0, state) do
     user = req0.bindings[:user]
     last_id = last_id(req0) || ""
@@ -103,6 +111,7 @@ defmodule Events.Route do
     {:cowboy_loop, req, state, :hibernate}
   end
 
+  @impl true
   def info({:event, data}, req, state) do
     [time, action, branch, id] = data
 

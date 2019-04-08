@@ -11,6 +11,7 @@ defmodule Router do
     {"/upload/[...]", :cowboy_static, {:dir, "./upload/"}},
     {"/events/:user/[:last_id]", Events.Route, nil},
     {"/:type/:branch/[:params]", Tree.Route, nil}
+    # {"/auth/:action", Auth.Route, nil}
   ]
 
   def start do

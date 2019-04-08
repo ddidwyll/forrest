@@ -2,7 +2,7 @@ defmodule Tree do
   @moduledoc false
 
   @branch [:id, :uid, :gid, :status, :upd, :json]
-  @other [:id, :uid, :gid, :status, :json]
+  @bag [:id, :uid, :gid, :status, :json]
   @rel [:left, :right, :uid, :gid, :status, :json]
 
   defp table(name, type, attrs) do
@@ -18,13 +18,15 @@ defmodule Tree do
 
   def init() do
     table(:tree, :set, @branch)
-    table(:bag, :bag, @other)
     table(:rels, :bag, @rel)
+    table(:bag, :bag, @bag)
   end
 end
 
 defmodule Tree.Route do
   @moduledoc false
+
+  @behaviour :cowboy_rest
 
   import :cowboy_req,
     only: [reply: 4, set_resp_body: 2]
@@ -63,71 +65,92 @@ defmodule Tree.Route do
     "github" => "ddidwyll/forrest"
   }
 
+  @impl true
   def init(req, opts) do
     state = %{
-      method: req.method,
       schema: schema(req.bindings.branch),
+      branch: req.bindings.branch,
+      type: req.bindings.type,
       id: req.bindings[:id],
+      method: req.method,
+      input: "empty",
       opts: opts,
-      output: [],
-      input: "empty"
+      list: []
     }
 
     info("init, #{inspect(state)}")
     {:cowboy_rest, req, state}
   end
 
+  @impl true
   def content_types_provided(req, state) do
     info("content_types_provided, #{inspect(state.opts)}")
     {[@to_json], req, state}
   end
 
+  @impl true
   def content_types_accepted(req, state) do
     info("content_types_accepted, #{inspect(state.opts)}")
     {[@from_json], req, state}
   end
 
+  @impl true
   def allowed_methods(req, state) do
     info("allowed_methods, #{inspect(state.opts)}")
     {@methods, req, state}
   end
 
+  @impl true
   def charsets_provided(req, state) do
     info("charsets_provided, #{inspect(state.opts)}")
     {[@utf8], req, state}
   end
 
+  @impl true
   def delete_completed(req, state) do
     info("delete_completed, #{inspect(state.opts)}")
     {false, req, state}
   end
 
+  @impl true
   def delete_resource(req, state) do
     info("delete_resource, #{inspect(state.opts)}")
     {false, req, state}
   end
 
+  @impl true
   def forbidden(req, state) do
     info("forbidden, #{inspect(state.opts)}")
     {false, req, state}
   end
 
-  def malformed_request(req0, state) do
-    info("malformed_request, #{inspect(state.opts)}")
+  @impl true
+  def malformed_request(req, state) do
+    cond do
+      state.type not in ["tree", "bag", "rels"] ->
+        message = "\"Wrong type #{state.type}\""
+        {true, set_resp_body(message, req), state}
 
-    req =
-      if !state.schema do
-        set_resp_body("\"Branch not exists\"", req0)
-      else
-        req0
-      end
+      !state.schema ->
+        message = "\"Wrong branch #{state.branch}\""
+        {true, set_resp_body(message, req), state}
 
-    {!state.schema, req, state}
+      true ->
+        {false, req, state}
+    end
+  end
+
+  @impl true
+  def options(req0, state) do
+    info("options")
+    json = Jason.encode!(state.schema)
+    req = reply(200, @headers, json, req0)
+    {:ok, req, state}
   end
 
   def to_json(req, state) do
-    info("to_json, #{inspect(state.output)}")
-    json = "[" <> Enum.join(state.output, ",") <> "]"
+    info("to_json, #{inspect(state.list)}")
+    json = "[" <> Enum.join(state.list, ",") <> "]"
     {json, req, state}
   end
 
@@ -136,12 +159,17 @@ defmodule Tree.Route do
     req = set_resp_body(state.input, req0)
     {true, req, state}
   end
+end
 
-  def options(req0, state) do
-    info("options")
-    json = Jason.encode!(state.schema)
-    req = reply(200, @headers, json, req0)
-    {:ok, req, state}
+defmodule Tree.JSON do
+  @moduledoc false
+
+  def to_json(req, state) do
+    {"json", req, state}
+  end
+
+  def from_json(req, state) do
+    {true, req, state}
   end
 end
 
