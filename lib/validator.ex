@@ -38,24 +38,24 @@ defmodule Validator do
   defp wrong_type?(_, "any"), do: false
   defp wrong_type?(_, _), do: true
 
-  defp into(val, struct) when is_list(val) do
+  defp struct?(val, struct) when is_list(val) do
     for v <- val do
-      into(v, struct)
+      struct?(v, struct)
     end
     |> filter(& &1)
   end
 
-  defp into(val, struct) when is_map(val) do
+  defp struct?(val, struct) when is_map(val) do
     keys = struct["keys"]
 
     for {k, v} <- val do
       (keys && k not in keys && "unknown key " <> k) ||
-        into(v, struct)
+        struct?(v, struct)
     end
     |> filter(& &1)
   end
 
-  defp into(val, struct) do
+  defp struct?(val, struct) do
     type = struct["type"]
     min = struct["min"]
     max = struct["max"]
@@ -70,7 +70,7 @@ defmodule Validator do
 
   defp errors(model, schema) do
     for {key, spec} <- schema["leafs"], into: %{} do
-      title = (spec["title"] <> ":")
+      title = spec["title"] <> ":"
       re = schema["regexps"][key]
       required = spec["required"]
       struct = spec["struct"]
@@ -88,7 +88,7 @@ defmodule Validator do
         max && len(val) >= max -> {title, "too large (max: #{max})"}
         arr && val not in arr -> {title, "not in [#{join(arr, ", ")}]"}
         re && !Regex.match?(re, val) -> {title, "not match (#{inspect(re)})"}
-        struct && into(val, struct) |> any? -> {title, into(val, struct) |> join(", ")}
+        struct && struct?(val, struct) |> any? -> {title, struct?(val, struct) |> join(", ")}
         true -> {key, nil}
       end
     end

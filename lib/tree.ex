@@ -2,13 +2,12 @@ defmodule Tree do
   @moduledoc false
 
   @branch [:id, :uid, :gid, :status, :upd, :json]
-  @bag [:id, :uid, :gid, :status, :json]
-  @rel [:left, :right, :uid, :gid, :status, :json]
+  @rel [:left, :right, :status, :json]
 
   def init() do
     table(:tree, :set, @branch)
-    table(:rels, :bag, @rel)
-    table(:bag, :bag, @bag)
+    table(:bag, :bag, @branch)
+    table(:rel, :bag, @rel)
   end
 
   defp table(name, type, attrs) do
@@ -179,19 +178,53 @@ defmodule Tree.JSON do
 end
 
 defmodule Tree.Store do
-  # @moduledoc false
+  @moduledoc false
 
-  # alias :mnesia, as: Mnesia
-  # import Enum, only: [each: 2]
+  alias :mnesia, as: Mnesia
 
-  # @db :tree
-  # @ids [:"$1"]
-  # @all [:"$$"]
+  import Map,
+    only: [
+      put: 3
+    ]
+
+  import Tuple,
+    only: [
+      append: 2
+    ]
+
+  import Jason,
+    only: [
+      encode!: 2
+    ]
+
+  # @branch [:id, :uid, :gid, :status, :upd, :json]
+  # @rel [:left, :right, :status, :json]
   # @db_struct {@db, :"$1", :"$2", :"$3", :"$4"}
+  @t :tree
+  @b :bag
+  @r :rel
 
-  # defp now do
-  #   :os.system_time(:millisecond)
-  # end
+  defp now do
+    :os.system_time(:millisecond)
+  end
+
+  def post({@t, uid, gid, rec0}) do
+    rec = put(rec0, "id", UUID.uuid4(:hex))
+    tuple = {@t, rec["id"], uid, gid, :active}
+    post(tuple, rec)
+  end
+
+  def post(tuple0, rec) do
+    now = now()
+    json = encode!(rec, escape: :html_safe)
+
+    tuple =
+      tuple0
+      |> append(now)
+      |> append(json)
+
+    IO.inspect(tuple)
+  end
 
   # def put(action, branch, id) do
   #   time = now() |> to_string
