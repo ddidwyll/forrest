@@ -1,17 +1,22 @@
 defmodule Validator do
   @moduledoc false
 
-  import Enum, only: [count: 1, any?: 1, join: 2]
-  import String, only: [capitalize: 1]
+  import Enum,
+    only: [
+      filter: 2,
+      count: 1,
+      join: 2,
+      any?: 1
+    ]
 
   import Map,
     only: [
       take: 2,
       drop: 2,
       keys: 1,
+      merge: 2,
       values: 1,
-      has_key?: 2,
-      merge: 2
+      has_key?: 2
     ]
 
   defp empty?(val) when is_map(val) or is_list(val), do: count(val) == 0
@@ -30,13 +35,45 @@ defmodule Validator do
   defp wrong_type?(val, "bool") when is_boolean(val), do: false
   defp wrong_type?(val, "array") when is_list(val), do: false
   defp wrong_type?(val, "map") when is_map(val), do: false
+  defp wrong_type?(_, "any"), do: false
   defp wrong_type?(_, _), do: true
+
+  defp into(val, struct) when is_list(val) do
+    for v <- val do
+      into(v, struct)
+    end
+    |> filter(& &1)
+  end
+
+  defp into(val, struct) when is_map(val) do
+    keys = struct["keys"]
+
+    for {k, v} <- val do
+      (keys && k not in keys && "unknown key " <> k) ||
+        into(v, struct)
+    end
+    |> filter(& &1)
+  end
+
+  defp into(val, struct) do
+    type = struct["type"]
+    min = struct["min"]
+    max = struct["max"]
+
+    cond do
+      type && wrong_type?(val, type) -> "#{val} must be #{type}"
+      min && len(val) <= min -> val <> " too small (min: #{min})"
+      max && len(val) >= max -> val <> " too large (max: #{max})"
+      true -> nil
+    end
+  end
 
   defp errors(model, schema) do
     for {key, spec} <- schema["leafs"], into: %{} do
-      title = (spec["title"] <> ":") |> capitalize
+      title = (spec["title"] <> ":")
       re = schema["regexps"][key]
       required = spec["required"]
+      struct = spec["struct"]
       type = spec["type"]
       min = spec["min"]
       max = spec["max"]
@@ -51,6 +88,7 @@ defmodule Validator do
         max && len(val) >= max -> {title, "too large (max: #{max})"}
         arr && val not in arr -> {title, "not in [#{join(arr, ", ")}]"}
         re && !Regex.match?(re, val) -> {title, "not match (#{inspect(re)})"}
+        struct && into(val, struct) |> any? -> {title, into(val, struct) |> join(", ")}
         true -> {key, nil}
       end
     end

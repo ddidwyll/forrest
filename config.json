@@ -11,17 +11,39 @@
         }
       },
       "rules": {
-        "delete_all": "admin",
-        "delete_grp": "manager",
-        "delete_own": "manager",
-        "get_all": "user",
-        "get_grp": "user",
-        "get_own": "user",
-        "patch_all": "admin",
-        "patch_grp": "manager",
-        "patch_own": "user",
-        "post_grp": "user",
-        "post_own": "user"
+        "delete_all": [
+          "admin"
+        ],
+        "delete_grp": [
+          "manager"
+        ],
+        "delete_own": [
+          "manager"
+        ],
+        "get_all": [
+          "user"
+        ],
+        "get_grp": [
+          "user"
+        ],
+        "get_own": [
+          "user"
+        ],
+        "patch_all": [
+          "admin"
+        ],
+        "patch_grp": [
+          "manager"
+        ],
+        "patch_own": [
+          "user"
+        ],
+        "post_grp": [
+          "user"
+        ],
+        "post_own": [
+          "user"
+        ]
       },
       "title": "company",
       "titles": "companies"
@@ -52,20 +74,53 @@
         }
       },
       "rules": {
-        "delete_all": "admin",
-        "delete_grp": "manager",
-        "delete_own": "manager",
-        "get_all": "user",
-        "get_grp": "user",
-        "get_own": "user",
-        "patch_all": "admin",
-        "patch_grp": "manager",
-        "patch_own": "user",
-        "post_grp": "user",
-        "post_own": "user"
+        "delete_all": [
+          "admin"
+        ],
+        "delete_grp": [
+          "manager"
+        ],
+        "delete_own": [
+          "manager"
+        ],
+        "get_all": [
+          "user"
+        ],
+        "get_grp": [
+          "user"
+        ],
+        "get_own": [
+          "user"
+        ],
+        "patch_all": [
+          "admin"
+        ],
+        "patch_grp": [
+          "manager"
+        ],
+        "patch_own": [
+          "user"
+        ],
+        "post_grp": [
+          "user"
+        ],
+        "post_own": [
+          "user"
+        ]
       },
       "title": "deal",
       "titles": "deals"
     }
+  },
+  "settings": {
+    "events_timeout": 300000,
+    "host": "localhost",
+    "port": 8080,
+    "roles": [
+      "anon",
+      "user",
+      "manager",
+      "admin"
+    ]
   }
 }

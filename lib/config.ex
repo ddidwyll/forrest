@@ -21,9 +21,13 @@ defmodule Config do
   @config %{
     "leafs" => %{
       "branches" => %{
-        "title" => "branches",
+        "title" => "map [branches]",
         "type" => "map",
         "required" => true
+      },
+      "settings" => %{
+        "title" => "env [settings]",
+        "type" => "map"
       }
     }
   }
@@ -31,23 +35,116 @@ defmodule Config do
   @branch %{
     "leafs" => %{
       "title" => %{
-        "title" => "branch title",
+        "title" => "branch [title]",
         "type" => "string",
         "required" => true
       },
       "titles" => %{
-        "title" => "branch titles",
+        "title" => "branch [titles]",
         "type" => "string",
         "required" => true
       },
       "leafs" => %{
-        "title" => "branch leafs",
+        "title" => "branch [leafs]",
         "type" => "map",
         "required" => true
       },
       "rules" => %{
-        "title" => "branch rules",
+        "title" => "branch [rules]",
         "type" => "map",
+        "required" => true
+      }
+    }
+  }
+
+  @rules %{
+    "leafs" => %{
+      "get_all" => %{
+        "title" => "Get all rule [get_all]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "get_grp" => %{
+        "title" => "Get group rule [get_grp]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "get_own" => %{
+        "title" => "Get own rule [get_own]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "post_own" => %{
+        "title" => "Post own rule [post_own]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "post_grp" => %{
+        "title" => "Post group rule [post_grp]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "patch_all" => %{
+        "title" => "Patch all rule [patch_all]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "patch_grp" => %{
+        "title" => "Patch group rule [patch_grp]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "patch_own" => %{
+        "title" => "Patch own rule [patch_own]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "delete_all" => %{
+        "title" => "Delete all rule [delete_all]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "delete_grp" => %{
+        "title" => "Delete group rule [delete_grp]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true
+      },
+      "delete_own" => %{
+        "title" => "Delete own rule [delete_own]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
         "required" => true
       }
     }
@@ -56,12 +153,12 @@ defmodule Config do
   @leaf %{
     "leafs" => %{
       "title" => %{
-        "title" => "value title",
+        "title" => "value [title]",
         "type" => "string",
         "required" => true
       },
       "type" => %{
-        "title" => "value type",
+        "title" => "value [type]",
         "type" => "string",
         "required" => true,
         "arr" => [
@@ -73,21 +170,72 @@ defmodule Config do
           "map"
         ]
       },
+      "struct" => %{
+        "title" => "value [struct]",
+        "type" => "map",
+        "struct" => %{
+          "keys" => [
+            "type",
+            "min",
+            "max",
+            "keys"
+          ]
+        }
+      },
+      "required" => %{
+        "title" => "is value [required]",
+        "type" => "bool"
+      },
+      "default" => %{
+        "title" => "[default] value",
+        "type" => "any"
+      },
       "min" => %{
-        "title" => "value min",
+        "title" => "value [min]",
         "type" => "integer"
       },
       "max" => %{
-        "title" => "value max",
+        "title" => "value [max]",
         "type" => "integer"
       },
       "arr" => %{
-        "title" => "value array",
+        "title" => "value [arr]ay",
         "type" => "array"
       },
       "re" => %{
-        "title" => "value regex",
+        "title" => "value [re]gex",
         "type" => "string"
+      }
+    }
+  }
+
+  @settings %{
+    "leafs" => %{
+      "port" => %{
+        "title" => "env [port]",
+        "type" => "integer",
+        "required" => true,
+        "min" => 80
+      },
+      "host" => %{
+        "title" => "env [host]",
+        "type" => "string",
+        "required" => true
+      },
+      "events_timeout" => %{
+        "title" => "idle [events_timeout]",
+        "type" => "integer",
+        "required" => true,
+        "min" => 0
+      },
+      "roles" => %{
+        "title" => "user [roles]",
+        "type" => "array",
+        "struct" => %{
+          "type" => "string"
+        },
+        "required" => true,
+        "min" => 1
       }
     }
   }
@@ -95,9 +243,15 @@ defmodule Config do
   @default_config %{
     "branches" => %{},
     "settings" => %{
+      "events_timeout" => 300_000,
       "host" => "localhost",
       "port" => 8080,
-      "events_timeout" => 5 * 60_000
+      "roles" => [
+        "anon",
+        "user",
+        "manager",
+        "admin"
+      ]
     }
   }
 
@@ -109,6 +263,7 @@ defmodule Config do
     )
   end
 
+  @impl true
   def init(_) do
     config = load()
     errors = errors(config)
@@ -121,21 +276,24 @@ defmodule Config do
     end
   end
 
+  @impl true
   def handle_call(:get, _, config) do
     {:reply, config, config}
   end
 
+  @impl true
   def handle_call({:set, config_json}, _, old_config) do
     with config <- load(config_json),
          [] <- errors(config),
          full <- merge(@default_config, config),
-         :ok <- save(config) do
+         :ok <- save(full) do
       {:reply, :ok, full}
     else
       e -> {:reply, {:error, e}, old_config}
     end
   end
 
+  @impl true
   def handle_cast({:add, type, branch, leaf, value}, config) do
     branches = config["branches"]
 
@@ -172,7 +330,7 @@ defmodule Config do
     end
   end
 
-  defp errors({leafs, branch}) do
+  defp errors({:leafs, leafs, branch}) do
     for {name, leaf} <- leafs do
       case Validator.process(leaf, @leaf) do
         {:ok, _} ->
@@ -189,35 +347,59 @@ defmodule Config do
           nil
 
         {:error, errors} ->
-          %{(branch <> "/" <> name) => errors}
+          %{(branch <> "." <> name) => errors}
       end
     end
   end
 
-  defp errors({branches}) do
+  defp errors({:other, model, name, schema}) do
+    case Validator.process(model, schema) do
+      {:ok, _} -> [nil]
+      {:error, errors} -> [%{name => errors}]
+    end
+  end
+
+  defp errors({:branches, branches}) do
     for {name, branch} <- branches do
       case Validator.process(branch, @branch) do
-        {:ok, _} -> errors({branch["leafs"], name})
-        {:error, errors} -> %{name => errors}
+        {:ok, _} ->
+          errors({:leafs, branch["leafs"], name}) ++
+            errors({:other, branch["rules"], name, @rules})
+
+        {:error, errors} ->
+          %{name => errors}
       end
     end
   end
 
   defp errors(config) do
     case Validator.process(config, @config) do
-      {:error, errors} -> [%{"config" => errors}]
-      {:ok, _} -> errors({config["branches"]})
+      {:error, errors} ->
+        [%{"config" => errors}]
+
+      {:ok, _} ->
+        errors({:branches, config["branches"]}) ++
+          if config["settings"] do
+            errors({
+              :other,
+              config["settings"],
+              "settings",
+              @settings
+            })
+          else
+            [nil]
+          end
     end
     |> flatten()
     |> filter(& &1)
   end
+
+  defp add(type, branch, leaf, value),
+    do: cast(:config, {:add, type, branch, leaf, value})
 
   def get_config, do: call(:config, :get)
   def env(key), do: get_config()["settings"][key]
   def set_config(json), do: call(:config, {:set, json})
   def rules(branch), do: get_config()["branches"][branch]
   def schema(branch), do: get_config()["branches"][branch]
-
-  defp add(type, branch, leaf, value),
-    do: cast(:config, {:add, type, branch, leaf, value})
 end

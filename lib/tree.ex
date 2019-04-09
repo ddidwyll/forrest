@@ -5,6 +5,12 @@ defmodule Tree do
   @bag [:id, :uid, :gid, :status, :json]
   @rel [:left, :right, :uid, :gid, :status, :json]
 
+  def init() do
+    table(:tree, :set, @branch)
+    table(:rels, :bag, @rel)
+    table(:bag, :bag, @bag)
+  end
+
   defp table(name, type, attrs) do
     :mnesia.create_table(
       name,
@@ -15,12 +21,6 @@ defmodule Tree do
       ]
     )
   end
-
-  def init() do
-    table(:tree, :set, @branch)
-    table(:rels, :bag, @rel)
-    table(:bag, :bag, @bag)
-  end
 end
 
 defmodule Tree.Route do
@@ -29,17 +29,20 @@ defmodule Tree.Route do
   @behaviour :cowboy_rest
 
   import :cowboy_req,
-    only: [reply: 4, set_resp_body: 2]
+    only: [
+      set_resp_headers: 2,
+      set_resp_body: 2
+    ]
 
   import Config, only: [schema: 1]
   import Logger, only: [info: 1]
 
   @methods [
     "OPTIONS",
-    "POST",
+    "DELETE",
     "PATCH",
-    "GET",
-    "DELETE"
+    "POST",
+    "GET"
   ]
 
   @application_json {
@@ -61,12 +64,14 @@ defmodule Tree.Route do
   @utf8 "utf-8"
 
   @headers %{
-    "server" => "forrest",
-    "github" => "ddidwyll/forrest"
+    "github" => "ddidwyll/forrest",
+    "server" => "forrest"
   }
 
   @impl true
-  def init(req, opts) do
+  def init(req0, opts) do
+    req = set_resp_headers(@headers, req0)
+
     state = %{
       schema: schema(req.bindings.branch),
       branch: req.bindings.branch,
@@ -84,43 +89,43 @@ defmodule Tree.Route do
 
   @impl true
   def content_types_provided(req, state) do
-    info("content_types_provided, #{inspect(state.opts)}")
+    info("content_types_provided")
     {[@to_json], req, state}
   end
 
   @impl true
   def content_types_accepted(req, state) do
-    info("content_types_accepted, #{inspect(state.opts)}")
+    info("content_types_accepted")
     {[@from_json], req, state}
   end
 
   @impl true
   def allowed_methods(req, state) do
-    info("allowed_methods, #{inspect(state.opts)}")
+    info("allowed_methods")
     {@methods, req, state}
   end
 
   @impl true
   def charsets_provided(req, state) do
-    info("charsets_provided, #{inspect(state.opts)}")
+    info("charsets_provided")
     {[@utf8], req, state}
   end
 
   @impl true
   def delete_completed(req, state) do
-    info("delete_completed, #{inspect(state.opts)}")
+    info("delete_completed")
     {false, req, state}
   end
 
   @impl true
   def delete_resource(req, state) do
-    info("delete_resource, #{inspect(state.opts)}")
+    info("delete_resource")
     {false, req, state}
   end
 
   @impl true
   def forbidden(req, state) do
-    info("forbidden, #{inspect(state.opts)}")
+    info("forbidden")
     {false, req, state}
   end
 
@@ -140,13 +145,13 @@ defmodule Tree.Route do
     end
   end
 
-  @impl true
-  def options(req0, state) do
-    info("options")
-    json = Jason.encode!(state.schema)
-    req = reply(200, @headers, json, req0)
-    {:ok, req, state}
-  end
+  # @impl true
+  # def options(req0, state) do
+  #   info("options")
+  #   json = Jason.encode!(state.schema)
+  #   req = reply(200, @headers, json, req0)
+  #   {:ok, req, state}
+  # end
 
   def to_json(req, state) do
     info("to_json, #{inspect(state.list)}")
