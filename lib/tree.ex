@@ -1,17 +1,28 @@
 defmodule Tree do
   @moduledoc false
 
-  @branch [:id, :uid, :gid, :status, :upd, :json]
-  @rel [:left, :right, :status, :json]
+  import :mnesia,
+    only: [
+      create_table: 2,
+      add_table_index: 2
+    ]
+
+  @tree [:id_branch_status, :gid_uid, :upd, :json]
+  @bag [:id_branch_status, :gid_uid, :upd, :json]
+  @rel [:id_branch_status, :brach_rel, :upd, :json]
 
   def init() do
-    table(:tree, :set, @branch)
-    table(:bag, :bag, @branch)
+    table(:tree, :set, @tree)
+    table(:bag, :bag, @bag)
     table(:rel, :bag, @rel)
+
+    add_table_index(:tree, :uid_gid)
+    add_table_index(:bag, :uid_gid)
+    add_table_index(:rel, :to_brach)
   end
 
   defp table(name, type, attrs) do
-    :mnesia.create_table(
+    create_table(
       name,
       [
         {:disc_copies, [node()]},
@@ -19,6 +30,8 @@ defmodule Tree do
         {:type, type}
       ]
     )
+
+    add_table_index(name, :upd)
   end
 end
 
@@ -180,50 +193,127 @@ end
 defmodule Tree.Store do
   @moduledoc false
 
-  alias :mnesia, as: Mnesia
-
-  import Map,
+  import :mnesia,
     only: [
-      put: 3
+      read: 1,
+      write: 1,
+      select: 2,
+      transaction: 1,
+      match_object: 1
     ]
 
-  import Tuple,
-    only: [
-      append: 2
-    ]
+  import Map, only: [put: 3]
+  import UUID, only: [uuid4: 1]
+  import Tuple, only: [append: 2]
+  import Jason, only: [encode!: 2]
+  import Enum, only: [into: 3, join: 2]
+  import List, only: [insert_at: 3, to_tuple: 1]
 
-  import Jason,
-    only: [
-      encode!: 2
-    ]
-
-  # @branch [:id, :uid, :gid, :status, :upd, :json]
-  # @rel [:left, :right, :status, :json]
-  # @db_struct {@db, :"$1", :"$2", :"$3", :"$4"}
-  @t :tree
-  @b :bag
-  @r :rel
+  @html [escape: :html_safe]
 
   defp now do
     :os.system_time(:millisecond)
   end
 
-  def post({@t, uid, gid, rec0}) do
-    rec = put(rec0, "id", UUID.uuid4(:hex))
-    tuple = {@t, rec["id"], uid, gid, :active}
-    post(tuple, rec)
+  def post(branch, uid, gid, rec0) do
+    id = uuid4(:hex)
+
+    rec =
+      rec0
+      |> put("id", id)
+      |> put("uid", uid)
+      |> put("gid", gid)
+
+    {:tree, {id, branch, :active}, {gid, uid}}
+    |> post(rec)
   end
 
-  def post(tuple0, rec) do
+  defp post(tuple, rec) do
     now = now()
-    json = encode!(rec, escape: :html_safe)
+    json = encode!(rec, @html)
 
-    tuple =
-      tuple0
+    {:atomic, result} =
+      tuple
       |> append(now)
       |> append(json)
+      |> write_fn()
+      |> transaction()
 
-    IO.inspect(tuple)
+    {result, rec["id"], now}
+  end
+
+  def get_by_branch(db, branch, status \\ :active) do
+    get_all(db, branch, status, :_, :_)
+  end
+
+  def get_by_user(db, branch, uid, status \\ :active) do
+    get_all(db, branch, status, :_, uid)
+  end
+
+  def get_by_group(db, branch, gid, status \\ :active) do
+    get_all(db, branch, status, gid, :_)
+  end
+
+  def get_all(db, branch, status, gid, uid) do
+    t = {db, {:_, branch, status}, {gid, uid}, :_, :_}
+
+    fn -> match_object(t) end
+    |> transaction()
+  end
+
+  def get_one(db, id, branch, status \\ :active) do
+    t = {id, branch, status}
+
+    fn -> read({db, t}) end
+    |> transaction()
+  end
+
+  def list_json({:atomic, list}) do
+    into(list, [], fn {_, _, _, _, json} -> json end)
+  end
+
+  def to_json(list) do
+    "[" <> join(list, ",") <> "]"
+  end
+
+  defp write_fn(tuple) do
+    fn -> write(tuple) end
+  end
+
+  def select(
+        db,
+        matchers,
+        branch,
+        status \\ :active,
+        fields \\ [:"$5"]
+      ) do
+    id_br_st = {:"$1", branch, status}
+    gid_uid = {:"$2", :"$3"}
+    struct = {db, id_br_st, gid_uid, :"$4", :"$5"}
+    match = {struct, [matchers], fields}
+    fn -> select(db, [match]) end
+  end
+
+  def get_from(db, branch, from \\ 0) do
+    select(db, {:>, :"$4", from}, branch)
+    |> transaction()
+  end
+
+  def get_by_groups(db, branch, groups) do
+    select(db, in_match(:"$2", groups), branch)
+    |> transaction()
+  end
+
+  def in_match(field, list) do
+    if length(list) > 0 do
+      for val <- list do
+        {:==, field, val}
+      end
+      |> insert_at(0, :or)
+      |> to_tuple()
+    else
+      {:==, true, false}
+    end
   end
 
   # def put(action, branch, id) do
@@ -238,19 +328,6 @@ defmodule Tree.Store do
   #     {:atomic, :ok} -> {:ok, time}
   #     _ -> :error
   #   end
-  # end
-
-  # defp select(matcher, fields \\ @all) do
-  #   {:atomic, result} =
-  #     fn ->
-  #       Mnesia.select(
-  #         @db,
-  #         [{@db_struct, matcher, fields}]
-  #       )
-  #     end
-  #     |> Mnesia.transaction()
-
-  #   result
   # end
 
   # def get(from \\ "") do
