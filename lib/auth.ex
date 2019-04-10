@@ -1,4 +1,4 @@
-defmodule Rules do
+defmodule Tree.Auth do
   @moduledoc false
 
   def process(_user, _model, _rules) do

@@ -101,10 +101,14 @@ defmodule Tree.Store do
         db,
         matchers,
         branch,
-        status \\ :active,
-        fields \\ [:"$5"]
+        fields \\ [:"$5"],
+        status \\ :active
       ) do
-    id_br_st = {:"$1", branch, status}
+    id_br_st =
+      if branch,
+        do: {:"$1", branch, status},
+        else: :"$1"
+
     struct = {db, id_br_st, :"$2", :"$3", :"$4", :"$5"}
     match = {struct, matchers, fields}
     fn -> select(db, [match]) end
@@ -134,6 +138,8 @@ defmodule Tree.Store do
     into(list, [], fn {_, {id, _, _}, _, _, _, _} -> id end)
   end
 
+  def list({:atomic, list}) when is_list(list), do: list
+
   def map_id_json({:atomic, list}) do
     fun = fn {_, {id, _, _}, _, _, _, json} -> {id, json} end
     into(list, %{}, fun)
@@ -154,7 +160,7 @@ defmodule Tree.Store do
     do: hd(list) |> decode!(@copy)
 
   def get_from(db, branch, from \\ 0),
-    do: select(db, [{:>, :"$4", from}], branch)
+    do: select(db, [{:>, :"$4", from}], branch, [[:"$4", :"$1"]])
 
   def get_by_groups(db, branch, groups),
     do: select(db, [in_match(:"$2", groups)], branch)
@@ -172,17 +178,73 @@ end
 defmodule Tree.Do do
   @moduledoc false
 
-  import Tree.Store
+  #
+  #
+  #
+  #
+  #
 
-  import :mnesia,
-    only: [transaction: 1]
+  # import Tree.Store
+  import Tree.Validator
 
-  def to_json(req, state) do
-    {"json", req, state}
+  # import :mnesia,
+  #   only: [transaction: 1]
+
+  import :cowboy_req,
+    only: [read_body: 1, set_resp_body: 2]
+
+  import Jason,
+    only: [decode: 2, encode!: 2]
+
+  @copy [strings: :copy]
+  @html [escape: :html_safe]
+
+  defp get_body({req, state}) do
+    with {:ok, json, _} <- read_body(req),
+         {:ok, body} <- decode(json, @copy) do
+      {:ok, req, %{state | in: body}}
+    else
+      {:error, e} ->
+        message = "Invalid json #{e.position || ""}"
+        {:error, req, %{state | out: message}}
+    end
   end
 
-  def from_json(req, state) do
-    {true, req, state}
+  defp validate({result, req, state}) do
+    with :ok <- result,
+         %{in: m, schema: s} <- state,
+         {:ok, model} <- process(m, s) do
+      {:ok, req, %{state | in: model}}
+    else
+      {:error, e} -> {:error, req, %{state | out: e}}
+      _ -> {:error, req, state}
+    end
+  end
+
+  defp message({result, req0, state}) do
+    req =
+      unless state.out,
+        do: req0,
+        else:
+          state.out
+          |> encode!(@html)
+          |> set_resp_body(req0)
+
+    {result, req, state}
+  end
+
+  def post(req0, state0) do
+    {result, req, state} =
+      {req0, state0}
+      |> get_body()
+      |> validate()
+      |> message()
+
+    IO.puts(result)
+    IO.puts("in:\n#{inspect(state.in)}")
+    IO.puts("out:\n#{inspect(state.out)}")
+
+    {result == :ok, req, state}
   end
 end
 
@@ -199,7 +261,7 @@ defmodule Tree.Route do
 
   import Tree.Config, only: [schema: 1]
   import Logger, only: [info: 1]
-  import Enum, only: [join: 2]
+  import Tree.Do
 
   @methods [
     "OPTIONS",
@@ -233,21 +295,19 @@ defmodule Tree.Route do
   }
 
   @impl true
-  def init(req0, opts) do
-    req = set_resp_headers(@headers, req0)
-
+  def init(req0, _) do
     state = %{
-      schema: schema(req.bindings.branch),
-      branch: req.bindings.branch,
-      type: req.bindings.type,
-      id: req.bindings[:id],
-      method: req.method,
-      input: "empty",
-      opts: opts,
-      list: []
+      schema: schema(req0.bindings.branch),
+      branch: req0.bindings.branch,
+      from: req0.bindings[:from],
+      type: req0.bindings.type,
+      to: req0.bindings[:to],
+      method: req0.method,
+      out: nil,
+      in: nil
     }
 
-    info("init, #{inspect(state)}")
+    req = set_resp_headers(@headers, req0)
     {:cowboy_rest, req, state}
   end
 
@@ -310,14 +370,12 @@ defmodule Tree.Route do
   end
 
   def to_json(req, state) do
-    info("to_json, #{inspect(state.list)}")
-    json = "[" <> join(state.list, ",") <> "]"
-    {json, req, state}
+    {"json", req, state}
   end
 
-  def from_json(req0, state) do
-    info("from_json, #{inspect(state.input)}")
-    req = set_resp_body(state.input, req0)
-    {true, req, state}
+  def from_json(req, state) do
+    case state.method do
+      "POST" -> post(req, state)
+    end
   end
 end
