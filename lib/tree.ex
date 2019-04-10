@@ -1,3 +1,8 @@
+defmodule Tree.Guards do
+  defguard is_empty_list(list)
+           when is_list(list) and length(list) == 0
+end
+
 defmodule Tree do
   @moduledoc false
 
@@ -7,18 +12,12 @@ defmodule Tree do
       add_table_index: 2
     ]
 
-  @tree [:id_branch_status, :gid_uid, :upd, :json]
-  @bag [:id_branch_status, :gid_uid, :upd, :json]
-  @rel [:id_branch_status, :brach_rel, :upd, :json]
+  @struct [:id_br_st, :gid, :uid, :upd, :json]
 
   def init() do
-    table(:tree, :set, @tree)
-    table(:bag, :bag, @bag)
-    table(:rel, :bag, @rel)
-
-    add_table_index(:tree, :uid_gid)
-    add_table_index(:bag, :uid_gid)
-    add_table_index(:rel, :to_brach)
+    table(:tree, :set, @struct)
+    table(:bag, :bag, @struct)
+    table(:rel, :bag, @struct)
   end
 
   defp table(name, type, attrs) do
@@ -31,6 +30,8 @@ defmodule Tree do
       ]
     )
 
+    add_table_index(name, :uid)
+    add_table_index(name, :gid)
     add_table_index(name, :upd)
   end
 end
@@ -157,14 +158,6 @@ defmodule Tree.Route do
     end
   end
 
-  # @impl true
-  # def options(req0, state) do
-  #   info("options")
-  #   json = Jason.encode!(state.schema)
-  #   req = reply(200, @headers, json, req0)
-  #   {:ok, req, state}
-  # end
-
   def to_json(req, state) do
     info("to_json, #{inspect(state.list)}")
     json = "[" <> Enum.join(state.list, ",") <> "]"
@@ -202,11 +195,13 @@ defmodule Tree.Store do
       match_object: 1
     ]
 
+  import Tree.Guards
   import Map, only: [put: 3]
   import UUID, only: [uuid4: 1]
   import Tuple, only: [append: 2]
   import Jason, only: [encode!: 2]
   import Enum, only: [into: 3, join: 2]
+  import String, only: [trim_trailing: 2]
   import List, only: [insert_at: 3, to_tuple: 1]
 
   @html [escape: :html_safe]
@@ -224,7 +219,7 @@ defmodule Tree.Store do
       |> put("uid", uid)
       |> put("gid", gid)
 
-    {:tree, {id, branch, :active}, {gid, uid}}
+    {:tree, {id, branch, :active}, gid, uid}
     |> post(rec)
   end
 
@@ -242,42 +237,14 @@ defmodule Tree.Store do
     {result, rec["id"], now}
   end
 
-  def get_by_branch(db, branch, status \\ :active) do
-    get_all(db, branch, status, :_, :_)
-  end
-
-  def get_by_user(db, branch, uid, status \\ :active) do
-    get_all(db, branch, status, :_, uid)
-  end
-
-  def get_by_group(db, branch, gid, status \\ :active) do
-    get_all(db, branch, status, gid, :_)
-  end
-
   def get_all(db, branch, status, gid, uid) do
-    t = {db, {:_, branch, status}, {gid, uid}, :_, :_}
-
+    t = {db, {:_, branch, status}, gid, uid, :_, :_}
     fn -> match_object(t) end
-    |> transaction()
   end
 
-  def get_one(db, id, branch, status \\ :active) do
+  def get_one(db, branch, id, status \\ :active) do
     t = {id, branch, status}
-
     fn -> read({db, t}) end
-    |> transaction()
-  end
-
-  def list_json({:atomic, list}) do
-    into(list, [], fn {_, _, _, _, json} -> json end)
-  end
-
-  def to_json(list) do
-    "[" <> join(list, ",") <> "]"
-  end
-
-  defp write_fn(tuple) do
-    fn -> write(tuple) end
   end
 
   def select(
@@ -288,24 +255,17 @@ defmodule Tree.Store do
         fields \\ [:"$5"]
       ) do
     id_br_st = {:"$1", branch, status}
-    gid_uid = {:"$2", :"$3"}
-    struct = {db, id_br_st, gid_uid, :"$4", :"$5"}
-    match = {struct, [matchers], fields}
+    struct = {db, id_br_st, :"$2", :"$3", :"$4", :"$5"}
+    match = {struct, matchers, fields}
     fn -> select(db, [match]) end
   end
 
-  def get_from(db, branch, from \\ 0) do
-    select(db, {:>, :"$4", from}, branch)
-    |> transaction()
-  end
-
-  def get_by_groups(db, branch, groups) do
-    select(db, in_match(:"$2", groups), branch)
-    |> transaction()
+  defp write_fn(tuple) do
+    fn -> write(tuple) end
   end
 
   def in_match(field, list) do
-    if length(list) > 0 do
+    if length(list) != 0 do
       for val <- list do
         {:==, field, val}
       end
@@ -316,37 +276,42 @@ defmodule Tree.Store do
     end
   end
 
-  # def put(action, branch, id) do
-  #   time = now() |> to_string
+  def list_json({:atomic, list}) do
+    into(list, [], fn {_, _, _, _, _, json} -> json end)
+  end
 
-  #   fun = fn ->
-  #     {@db, time, action, branch, id}
-  #     |> Mnesia.write()
-  #   end
+  def list_id({:atomic, list}) do
+    into(list, [], fn {_, {id, _, _}, _, _, _, _} -> id end)
+  end
 
-  #   case Mnesia.transaction(fun) do
-  #     {:atomic, :ok} -> {:ok, time}
-  #     _ -> :error
-  #   end
-  # end
+  def map_id_json({:atomic, list}) do
+    fun = fn {_, {id, _, _}, _, _, _, json} -> {id, json} end
+    into(list, %{}, fun)
+  end
 
-  # def get(from \\ "") do
-  #   [{:>, :"$1", from}]
-  #   |> select()
-  # end
+  def to_json(map) when is_map(map) do
+    fun = fn {k, v} -> "\"#{k}\":#{v}," end
+    str = into(map, <<>>, fun) |> trim_trailing(",")
+    "{" <> str <> "}"
+  end
 
-  # def garbage() do
-  #   day_ago =
-  #     (now() - 24 * 60 * 60 * 1000)
-  #     |> to_string()
+  def to_json(list) when is_empty_list(list), do: "[]"
 
-  #   fn ->
-  #     Mnesia.select(
-  #       @db,
-  #       [{@db_struct, [{:<, :"$1", day_ago}], @ids}]
-  #     )
-  #     |> each(&Mnesia.delete({@db, &1}))
-  #   end
-  #   |> Mnesia.transaction()
-  # end
+  def to_json(list) when is_list(list),
+    do: "[" <> join(list, ",") <> "]"
+
+  def get_from(db, branch, from \\ 0),
+    do: select(db, [{:>, :"$4", from}], branch)
+
+  def get_by_groups(db, branch, groups),
+    do: select(db, [in_match(:"$2", groups)], branch)
+
+  def get_by_branch(db, branch, status \\ :active),
+    do: get_all(db, branch, status, :_, :_)
+
+  def get_by_user(db, branch, uid, status \\ :active),
+    do: get_all(db, branch, status, :_, uid)
+
+  def get_by_group(db, branch, gid, status \\ :active),
+    do: get_all(db, branch, status, gid, :_)
 end
