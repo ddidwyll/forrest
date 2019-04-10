@@ -7,7 +7,6 @@ defmodule Tree do
       add_table_index: 2
     ]
 
-  # {id, branch, status} = id_br_st
   @struct [:id_br_st, :gid, :uid, :upd, :json]
 
   def init() do
@@ -184,8 +183,9 @@ defmodule Tree.Do do
   #
   #
 
-  # import Tree.Store
+  import Tree.Store
   import Tree.Validator
+  import String, only: [capitalize: 1]
 
   # import :mnesia,
   #   only: [transaction: 1]
@@ -233,18 +233,47 @@ defmodule Tree.Do do
     {result, req, state}
   end
 
-  def post(req0, state0) do
-    {result, req, state} =
-      {req0, state0}
-      |> get_body()
-      |> validate()
-      |> message()
+  defp write({result, req, state}) do
+    if result == :ok do
+      {:ok, id, time} =
+        post(
+          state.branch,
+          state.uid,
+          state.gid,
+          state.in
+        )
 
-    IO.puts(result)
-    IO.puts("in:\n#{inspect(state.in)}")
-    IO.puts("out:\n#{inspect(state.out)}")
+      message =
+        capitalize(state.schema["title"]) <>
+          " was posted"
 
-    {result == :ok, req, state}
+      {:ok, req, %{state | from: time, to: id, out: message}}
+    else
+      {result, req, state}
+    end
+  end
+
+  defp result({result, req, state}) do
+    cond do
+      result == :ok && !state.to ->
+        {true, req, state}
+
+      result == :ok && state.to ->
+        uri = "/tree/#{state.branch}/#{state.to}"
+        {{true, uri}, req, state}
+
+      true ->
+        {false, req, state}
+    end
+  end
+
+  def post(req, state) do
+    {req, state}
+    |> get_body()
+    |> validate()
+    |> write()
+    |> message()
+    |> result()
   end
 end
 
@@ -268,6 +297,7 @@ defmodule Tree.Route do
     "DELETE",
     "PATCH",
     "POST",
+    "PUT",
     "GET"
   ]
 
@@ -303,6 +333,8 @@ defmodule Tree.Route do
       type: req0.bindings.type,
       to: req0.bindings[:to],
       method: req0.method,
+      uid: "ddidwyll",
+      gid: "work",
       out: nil,
       in: nil
     }
@@ -376,6 +408,7 @@ defmodule Tree.Route do
   def from_json(req, state) do
     case state.method do
       "POST" -> post(req, state)
+      "PUT" -> post(req, state)
     end
   end
 end
