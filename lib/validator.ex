@@ -1,4 +1,4 @@
-defmodule Validator do
+defmodule Tree.Validator do
   @moduledoc false
 
   import Enum,

@@ -1,8 +1,8 @@
-defmodule Events do
+defmodule Tree.Events do
   @moduledoc false
 
   use GenServer
-  alias Events.Store
+  alias Tree.Events.Store
 
   import Process,
     only: [alive?: 1, send_after: 3]
@@ -85,7 +85,7 @@ defmodule Events do
   end
 end
 
-defmodule Events.Route do
+defmodule Tree.Events.Route do
   @moduledoc false
 
   @behaviour :cowboy_loop
@@ -93,7 +93,7 @@ defmodule Events.Route do
   import :cowboy_req,
     only: [stream_reply: 3, stream_events: 3]
 
-  import Events,
+  import Tree.Events,
     only: [subscribe: 3]
 
   @headers %{
@@ -130,7 +130,7 @@ defmodule Events.Route do
   end
 end
 
-defmodule Events.Store do
+defmodule Tree.Events.Store do
   @moduledoc false
 
   alias :mnesia, as: Mnesia

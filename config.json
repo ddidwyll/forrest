@@ -46,7 +46,8 @@
         ]
       },
       "title": "company",
-      "titles": "companies"
+      "titles": "companies",
+      "type": "tree"
     },
     "deal": {
       "leafs": {
@@ -109,10 +110,13 @@
         ]
       },
       "title": "deal",
-      "titles": "deals"
+      "titles": "deals",
+      "type": "tree"
     }
   },
   "settings": {
+    "client_assets": "./client/public/",
+    "client_entry": "./client/public/index.html",
     "events_timeout": 300000,
     "host": "localhost",
     "port": 8080,
@@ -121,6 +125,7 @@
       "user",
       "manager",
       "admin"
-    ]
+    ],
+    "upload_dir": "./priv/upload/"
   }
 }

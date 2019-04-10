@@ -1,13 +1,15 @@
-defmodule Config do
+defmodule Tree.Config do
   @moduledoc false
 
   use GenServer
 
   import Map, only: [merge: 2]
   import Enum, only: [filter: 2]
+  import Logger, only: [error: 1]
   import List, only: [flatten: 1]
   import Regex, only: [compile: 1]
-  import Logger, only: [error: 1]
+  import String, only: [to_atom: 1]
+  import Tree.Validator, only: [process: 2]
 
   import File,
     only: [read!: 1, write!: 2]
@@ -53,6 +55,16 @@ defmodule Config do
         "title" => "branch [rules]",
         "type" => "map",
         "required" => true
+      },
+      "type" => %{
+        "title" => "branch [type]",
+        "type" => "string",
+        "required" => true,
+        "arr" => [
+          "tree",
+          "bag",
+          "rel"
+        ]
       }
     }
   }
@@ -236,6 +248,21 @@ defmodule Config do
         },
         "required" => true,
         "min" => 1
+      },
+      "client_entry" => %{
+        "title" => "[client_entry] point",
+        "type" => "string",
+        "required" => true
+      },
+      "client_assets" => %{
+        "title" => "[client_assets] directory",
+        "type" => "string",
+        "required" => true
+      },
+      "upload_dir" => %{
+        "title" => "files [upload_dir]",
+        "type" => "string",
+        "required" => true
       }
     }
   }
@@ -243,6 +270,9 @@ defmodule Config do
   @default_config %{
     "branches" => %{},
     "settings" => %{
+      "client_entry" => "./client/public/index.html",
+      "client_assets" => "./client/public/",
+      "upload_dir" => "./priv/upload/",
       "events_timeout" => 300_000,
       "host" => "localhost",
       "port" => 8080,
@@ -297,13 +327,20 @@ defmodule Config do
   def handle_cast({:add, type, branch, leaf, value}, config) do
     branches = config["branches"]
 
-    if branches[branch]["leafs"][leaf] do
-      l3 = merge(branches[branch][type] || %{}, %{leaf => value})
-      l2 = merge(branches[branch], %{type => l3})
-      l1 = merge(branches, %{branch => l2})
-      {:noreply, merge(config, %{"branches" => l1})}
-    else
-      {:noreply, config}
+    cond do
+      leaf && branches[branch]["leafs"][leaf] ->
+        l3 = merge(branches[branch][type] || %{}, %{leaf => value})
+        l2 = merge(branches[branch], %{type => l3})
+        l1 = merge(branches, %{branch => l2})
+        {:noreply, merge(config, %{"branches" => l1})}
+
+      is_nil(leaf) && branches[branch] ->
+        l2 = merge(branches[branch], %{type => value})
+        l1 = merge(branches, %{branch => l2})
+        {:noreply, merge(config, %{"branches" => l1})}
+
+      true ->
+        {:noreply, config}
     end
   end
 
@@ -332,7 +369,7 @@ defmodule Config do
 
   defp errors({:leafs, leafs, branch}) do
     for {name, leaf} <- leafs do
-      case Validator.process(leaf, @leaf) do
+      case process(leaf, @leaf) do
         {:ok, _} ->
           with regexp <- leaf["re"],
                false <- is_nil(regexp),
@@ -353,7 +390,7 @@ defmodule Config do
   end
 
   defp errors({:other, model, name, schema}) do
-    case Validator.process(model, schema) do
+    case process(model, schema) do
       {:ok, _} -> [nil]
       {:error, errors} -> [%{name => errors}]
     end
@@ -361,8 +398,10 @@ defmodule Config do
 
   defp errors({:branches, branches}) do
     for {name, branch} <- branches do
-      case Validator.process(branch, @branch) do
+      case process(branch, @branch) do
         {:ok, _} ->
+          add("type", name, branch["type"] |> to_atom)
+
           errors({:leafs, branch["leafs"], name}) ++
             errors({:other, branch["rules"], name, @rules})
 
@@ -373,7 +412,7 @@ defmodule Config do
   end
 
   defp errors(config) do
-    case Validator.process(config, @config) do
+    case process(config, @config) do
       {:error, errors} ->
         [%{"config" => errors}]
 
@@ -394,7 +433,7 @@ defmodule Config do
     |> filter(& &1)
   end
 
-  defp add(type, branch, leaf, value),
+  defp add(type, branch, leaf \\ nil, value),
     do: cast(:config, {:add, type, branch, leaf, value})
 
   def get_config, do: call(:config, :get)

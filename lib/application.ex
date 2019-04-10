@@ -6,8 +6,8 @@ defmodule Forrest.Application do
 
   def start(_, _) do
     children = [
-      Config,
-      Events
+      Tree.Config,
+      Tree.Events
     ]
 
     opts = [
@@ -15,12 +15,11 @@ defmodule Forrest.Application do
       name: Forrest.Supervisor
     ]
 
-    # Forrest.Auth.init()
     Mnesia.create_schema([node()])
     Mnesia.start()
     {:ok, pid} = Supervisor.start_link(children, opts)
     Tree.init()
-    Router.start()
+    Tree.Router.init()
     {:ok, pid}
   end
 end

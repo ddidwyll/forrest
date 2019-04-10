@@ -1,20 +1,11 @@
-defmodule Router do
+defmodule Tree.Router do
   @moduledoc false
 
-  import Config, only: [env: 1]
+  import Tree.Config, only: [env: 1]
   import :cowboy, only: [start_clear: 3]
   import :cowboy_router, only: [compile: 1]
 
-  @routes [
-    {"/", :cowboy_static, {:file, "./client/public/index.html"}},
-    {"/assets/[...]", :cowboy_static, {:dir, "./client/public/"}},
-    {"/upload/[...]", :cowboy_static, {:dir, "./upload/"}},
-    {"/events/:user/[:last_id]", Events.Route, nil},
-    {"/:type/:branch/[:params]", Tree.Route, nil}
-    # {"/auth/:action", Auth.Route, nil}
-  ]
-
-  def start do
+  def init do
     start_clear(
       :http,
       [{:port, env("port")}],
@@ -26,6 +17,14 @@ defmodule Router do
   end
 
   def routes do
-    compile([{env("host"), @routes}])
+    routes = [
+      {"/assets/[...]", :cowboy_static, {:dir, env("client_assets")}},
+      {"/upload/[...]", :cowboy_static, {:dir, env("upload_dir")}},
+      {"/", :cowboy_static, {:file, env("client_entry")}},
+      {"/events/:user/[:last_id]", Tree.Events.Route, nil},
+      {"/:type/:branch/[:from]/[:to]", Tree.Route, nil}
+    ]
+
+    compile([{env("host"), routes}])
   end
 end
