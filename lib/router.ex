@@ -22,7 +22,7 @@ defmodule Tree.Router do
       {"/upload/[...]", :cowboy_static, {:dir, env("upload_dir")}},
       {"/", :cowboy_static, {:file, env("client_entry")}},
       {"/events/:user/[:last_id]", Tree.Events.Route, nil},
-      {"/:type/:branch/[:from]/[:to]", Tree.Route, nil}
+      {"/:type/:branch/[:to]/[:from]", Tree.Route, nil}
     ]
 
     compile([{env("host"), routes}])

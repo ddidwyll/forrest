@@ -86,14 +86,17 @@ defmodule Tree.Store do
     {result, rec["id"], now}
   end
 
-  def get_all(db, branch, status, gid, uid) do
-    t = {db, {:_, branch, status}, gid, uid, :_, :_}
+  def get_all(db, branch, status, gid, uid, id \\ :_) do
+    t = {db, {id, branch, status}, gid, uid, :_, :_}
     fn -> match_object(t) end
   end
 
   def get_one(db, branch, id, status \\ :active) do
     t = {id, branch, status}
+
     fn -> read({db, t}) end
+    |> transaction()
+    |> list()
   end
 
   def select(
@@ -184,6 +187,7 @@ defmodule Tree.Do do
   #
 
   import Tree.Store
+  import Tree.Guards
   import Tree.Validator
   import String, only: [capitalize: 1]
 
@@ -212,9 +216,9 @@ defmodule Tree.Do do
 
   defp validate({result, req, state}) do
     with :ok <- result,
-         %{in: m, schema: s} <- state,
-         {:ok, model} <- process(m, s) do
-      {:ok, req, %{state | in: model}}
+         %{in: r, schema: s} <- state,
+         {:ok, rec} <- process(r, s) do
+      {:ok, req, %{state | in: rec}}
     else
       {:error, e} -> {:error, req, %{state | out: e}}
       _ -> {:error, req, state}
@@ -267,6 +271,27 @@ defmodule Tree.Do do
     end
   end
 
+  def exist(req, state) do
+    with false <- is_nil(state.from),
+         list <-
+           get_one(
+             state.schema["type"],
+             state.branch,
+             state.from
+           ),
+         true <- is_one_in_list(list),
+         [{_, _, gid, uid, upd, json}] <- list do
+      {
+        true,
+        req,
+        %{state | gid: gid, uid: uid, upd: upd, out: json}
+      }
+    else
+      0 -> {false, req, state}
+      _ -> {false, req, state}
+    end
+  end
+
   def post(req, state) do
     {req, state}
     |> get_body()
@@ -288,6 +313,9 @@ defmodule Tree.Route do
       set_resp_body: 2
     ]
 
+  import :erlang,
+    only: [posixtime_to_universaltime: 1]
+
   import Tree.Config, only: [schema: 1]
   import Logger, only: [info: 1]
   import Tree.Do
@@ -297,7 +325,6 @@ defmodule Tree.Route do
     "DELETE",
     "PATCH",
     "POST",
-    "PUT",
     "GET"
   ]
 
@@ -333,8 +360,10 @@ defmodule Tree.Route do
       type: req0.bindings.type,
       to: req0.bindings[:to],
       method: req0.method,
+      status: nil,
       uid: "ddidwyll",
       gid: "work",
+      upd: nil,
       out: nil,
       in: nil
     }
@@ -374,9 +403,33 @@ defmodule Tree.Route do
   end
 
   @impl true
+  def resource_exists(req, state) do
+    info("resource_exists")
+    exist(req, state)
+  end
+
+  @impl true
+  def previously_existed(req, state) do
+    info("previously_existed")
+    {false, req, state}
+  end
+
+  @impl true
   def delete_resource(req, state) do
     info("delete_resource")
     {false, req, state}
+  end
+
+  @impl true
+  def last_modified(req, state) do
+    info("last_modified")
+
+    lm =
+      state.upd
+      |> div(1000)
+      |> posixtime_to_universaltime()
+
+    {lm, req, state}
   end
 
   @impl true
@@ -402,13 +455,12 @@ defmodule Tree.Route do
   end
 
   def to_json(req, state) do
-    {"json", req, state}
+    {state.out, req, state}
   end
 
   def from_json(req, state) do
     case state.method do
       "POST" -> post(req, state)
-      "PUT" -> post(req, state)
     end
   end
 end
