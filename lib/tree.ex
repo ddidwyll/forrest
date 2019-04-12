@@ -88,7 +88,9 @@ defmodule Tree.Store do
 
   def get_all(db, branch, status, gid, uid, id \\ :_) do
     t = {db, {id, branch, status}, gid, uid, :_, :_}
+
     fn -> match_object(t) end
+    |> transaction()
   end
 
   def get_one(db, branch, id, status \\ :active) do
@@ -138,6 +140,10 @@ defmodule Tree.Store do
 
   def list_id({:atomic, list}) do
     into(list, [], fn {_, {id, _, _}, _, _, _, _} -> id end)
+  end
+
+  def list_status({:atomic, list}) do
+    into(list, [], fn {_, {_, _, status}, _, _, _, _} -> status end)
   end
 
   def list({:atomic, list}) when is_list(list), do: list
@@ -237,6 +243,10 @@ defmodule Tree.Do do
     {result, req, state}
   end
 
+  defp title(state) do
+    capitalize(state.schema["title"]) <> " "
+  end
+
   defp write({result, req, state}) do
     if result == :ok do
       {:ok, id, time} =
@@ -247,10 +257,7 @@ defmodule Tree.Do do
           state.in
         )
 
-      message =
-        capitalize(state.schema["title"]) <>
-          " was posted"
-
+      message = title(state) <> "was posted"
       {:ok, req, %{state | from: time, to: id, out: message}}
     else
       {result, req, state}
@@ -289,6 +296,34 @@ defmodule Tree.Do do
     else
       0 -> {false, req, state}
       _ -> {false, req, state}
+    end
+  end
+
+  def status(state) do
+    statuses =
+      get_all(
+        state.schema["type"],
+        state.branch,
+        :_,
+        :_,
+        :_,
+        state.from
+      )
+      |> list_status
+
+    cond do
+      is_empty_list(statuses) ->
+        %{state | out: title(state) <> "not found"}
+
+      statuses == [:deleted] || :deleted in [statuses] ->
+        %{state | out: title(state) <> "deleted"}
+
+      statuses == [:blocked] || :blocked in [statuses] ->
+        %{state | out: title(state) <> "blocked"}
+
+      statuses == [:archived] || :archived in [statuses] ->
+        to = "/archive/#{state.branch}/#{state.from}"
+        %{state | out: title(state) <> "archived", to: to}
     end
   end
 
@@ -360,7 +395,6 @@ defmodule Tree.Route do
       type: req0.bindings.type,
       to: req0.bindings[:to],
       method: req0.method,
-      status: nil,
       uid: "ddidwyll",
       gid: "work",
       upd: nil,
@@ -421,15 +455,21 @@ defmodule Tree.Route do
   end
 
   @impl true
+  def is_authorized(req, state) do
+    info("is_authorized")
+    {true, req, state}
+  end
+
+  @impl true
   def last_modified(req, state) do
     info("last_modified")
 
-    lm =
+    last_mod =
       state.upd
       |> div(1000)
       |> posixtime_to_universaltime()
 
-    {lm, req, state}
+    {last_mod, req, state}
   end
 
   @impl true
