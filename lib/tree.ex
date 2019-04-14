@@ -12,7 +12,6 @@ defmodule Tree do
   def init() do
     table(:tree, :set, @struct)
     table(:bag, :bag, @struct)
-    table(:rel, :bag, @struct)
   end
 
   defp table(name, type, attrs) do
@@ -33,6 +32,12 @@ end
 
 defmodule Tree.Store do
   @moduledoc false
+
+  #
+  #
+  #
+  #
+  #
 
   import :mnesia,
     only: [
@@ -59,7 +64,7 @@ defmodule Tree.Store do
     :os.system_time(:millisecond)
   end
 
-  def post(branch, uid, gid, rec0) do
+  def post(branch, uid, gid, rec0, status \\ :active) do
     id = uuid4(:hex)
 
     rec =
@@ -68,7 +73,7 @@ defmodule Tree.Store do
       |> put("uid", uid)
       |> put("gid", gid)
 
-    {:tree, {id, branch, :active}, gid, uid}
+    {:tree, {id, branch, status}, gid, uid}
     |> post(rec)
   end
 
@@ -191,7 +196,6 @@ defmodule Tree.Do do
   #
   #
   #
-
   import Tree.Store
   import Tree.Guards
   import Tree.Validator
@@ -231,7 +235,7 @@ defmodule Tree.Do do
     end
   end
 
-  defp message({result, req0, state}) do
+  def message({result, req0, state}) do
     req =
       unless state.out,
         do: req0,
@@ -313,7 +317,7 @@ defmodule Tree.Do do
 
     cond do
       is_empty_list(statuses) ->
-        %{state | out: title(state) <> "not found"}
+        state
 
       statuses == [:deleted] || :deleted in [statuses] ->
         %{state | out: title(state) <> "deleted"}
@@ -323,7 +327,7 @@ defmodule Tree.Do do
 
       statuses == [:archived] || :archived in [statuses] ->
         to = "/archive/#{state.branch}/#{state.from}"
-        %{state | out: title(state) <> "archived", to: to}
+        %{state | out: title(state) <> "moved to archive", to: to}
     end
   end
 
@@ -339,6 +343,12 @@ end
 
 defmodule Tree.Route do
   @moduledoc false
+
+  #
+  #
+  #
+  #
+  #
 
   @behaviour :cowboy_rest
 
@@ -443,9 +453,24 @@ defmodule Tree.Route do
   end
 
   @impl true
-  def previously_existed(req, state) do
+  def previously_existed(req, state0) do
     info("previously_existed")
-    {false, req, state}
+    state = status(state0)
+
+    {!!state.out, req, state}
+    |> message()
+  end
+
+  @impl true
+  def moved_permanently(req, state) do
+    info("moved_permanently")
+
+    moved =
+      if state.to,
+        do: {true, state.to},
+        else: false
+
+    {moved, req, state}
   end
 
   @impl true
