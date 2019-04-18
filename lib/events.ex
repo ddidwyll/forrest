@@ -13,7 +13,7 @@ defmodule Tree.Events do
   import Enum,
     only: [uniq: 1, find_value: 3]
 
-  @event [:time, :action, :branch, :id]
+  @event [:time, :branch, :id, :action]
 
   def start_link(_) do
     start_link(
@@ -50,16 +50,16 @@ defmodule Tree.Events do
   end
 
   @impl true
-  def handle_call({:event, action, branch, id}, _, state) do
-    {:ok, time} = Store.put(action, branch, id)
+  def handle_cast({:event, branch, id, action, t}, state) do
+    {:ok, time} = Store.put(branch, id, action, t)
 
     alive =
       for {pid, _} = conn <- state, alive?(pid) do
-        send(pid, {:event, [time, action, branch, id]})
+        send(pid, {:event, [time, branch, id, action]})
         conn
       end
 
-    {:reply, time, alive}
+    {:noreply, alive}
   end
 
   @impl true
@@ -71,8 +71,8 @@ defmodule Tree.Events do
   def subscribe(pid, user, last_id),
     do: cast(:events, {:subscribe, {pid, user, last_id}})
 
-  def new(action, branch, id),
-    do: call(:events, {:event, action, branch, id})
+  def event(branch, id, action, time),
+    do: cast(:events, {:event, branch, id, action, time})
 
   def online(), do: call(:events, :online)
   def online(id), do: id in online()
@@ -93,8 +93,7 @@ defmodule Tree.Events.Route do
   import :cowboy_req,
     only: [stream_reply: 3, stream_events: 3]
 
-  import Tree.Events,
-    only: [subscribe: 3]
+  import Tree.Events, only: [subscribe: 3]
 
   @headers %{
     "content-type" => "text/event-stream",
@@ -113,12 +112,12 @@ defmodule Tree.Events.Route do
 
   @impl true
   def info({:event, data}, req, state) do
-    [time, action, branch, id] = data
+    [time, branch, id, action] = data
 
     event = %{
       id: time,
-      event: action,
-      data: id <> "@" <> branch
+      event: branch,
+      data: "{\"id\":\"#{id}\",\"action\":\"#{action}\"}"
     }
 
     stream_events(event, :nofin, req)
@@ -145,11 +144,11 @@ defmodule Tree.Events.Store do
     :os.system_time(:millisecond)
   end
 
-  def put(action, branch, id) do
-    time = now() |> to_string
+  def put(branch, id, action, t \\ nil) do
+    time = t || now() |> to_string
 
     fun = fn ->
-      {@db, time, action, branch, id}
+      {@db, time, branch, id, action}
       |> Mnesia.write()
     end
 
@@ -180,7 +179,7 @@ defmodule Tree.Events.Store do
   def garbage() do
     day_ago =
       (now() - 24 * 60 * 60 * 1000)
-      |> to_string()
+      |> to_string
 
     fn ->
       Mnesia.select(

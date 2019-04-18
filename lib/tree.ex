@@ -200,6 +200,7 @@ defmodule Tree.Main do
   import Tree.Store
   import Tree.Guards
   import Tree.Validator
+  import Tree.Events, only: [event: 4]
   import String, only: [capitalize: 1]
 
   import :cowboy_req,
@@ -264,6 +265,19 @@ defmodule Tree.Main do
     else
       {result, req, state}
     end
+  end
+
+  defp event({result, req, state}, action) do
+    if result == :ok do
+      event(
+        state.branch,
+        state.to,
+        action,
+        state.from
+      )
+    end
+
+    {result, req, state}
   end
 
   defp result({result, req, state}) do
@@ -337,6 +351,7 @@ defmodule Tree.Main do
     |> validate()
     |> write()
     |> message()
+    |> event("post")
     |> result()
   end
 end
