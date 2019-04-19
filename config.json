@@ -126,6 +126,7 @@
       "manager",
       "admin"
     ],
+    "secret": "!!!CHANGE_ME!!!",
     "upload_dir": "./priv/upload/"
   }
 }

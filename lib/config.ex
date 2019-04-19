@@ -28,7 +28,7 @@ defmodule Tree.Config do
         "required" => true
       },
       "settings" => %{
-        "title" => "env [settings]",
+        "title" => "app [settings]",
         "type" => "map"
       }
     }
@@ -224,20 +224,21 @@ defmodule Tree.Config do
   @settings %{
     "leafs" => %{
       "port" => %{
-        "title" => "env [port]",
+        "title" => "app [port]",
         "type" => "integer",
-        "required" => true,
         "min" => 80
       },
       "host" => %{
-        "title" => "env [host]",
-        "type" => "string",
-        "required" => true
+        "title" => "app [host]",
+        "type" => "string"
+      },
+      "secret" => %{
+        "title" => "JWT [secret]",
+        "type" => "string"
       },
       "events_timeout" => %{
         "title" => "idle [events_timeout]",
         "type" => "integer",
-        "required" => true,
         "min" => 0
       },
       "roles" => %{
@@ -246,23 +247,19 @@ defmodule Tree.Config do
         "struct" => %{
           "type" => "string"
         },
-        "required" => true,
         "min" => 1
       },
       "client_entry" => %{
         "title" => "[client_entry] point",
-        "type" => "string",
-        "required" => true
+        "type" => "string"
       },
       "client_assets" => %{
         "title" => "[client_assets] directory",
-        "type" => "string",
-        "required" => true
+        "type" => "string"
       },
       "upload_dir" => %{
         "title" => "files [upload_dir]",
-        "type" => "string",
-        "required" => true
+        "type" => "string"
       }
     }
   }
@@ -273,6 +270,7 @@ defmodule Tree.Config do
       "client_entry" => "./client/public/index.html",
       "client_assets" => "./client/public/",
       "upload_dir" => "./priv/upload/",
+      "secret" => "!!!CHANGE_ME!!!",
       "events_timeout" => 300_000,
       "host" => "localhost",
       "port" => 8080,
@@ -315,7 +313,12 @@ defmodule Tree.Config do
   def handle_call({:set, config_json}, _, old_config) do
     with config <- load(config_json),
          [] <- errors(config),
-         full <- merge(@default_config, config),
+         settings <-
+           merge(
+             @default_config["settings"],
+             config["settings"] || %{}
+           ),
+         full <- merge(config, %{"settings" => settings}),
          :ok <- save(full) do
       {:reply, :ok, full}
     else

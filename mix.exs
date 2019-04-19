@@ -22,6 +22,7 @@ defmodule Forrest.MixProject do
     [
       {:cowboy, "~> 2.6.1"},
       {:jason, "~> 1.1"},
+      {:joken, "~> 2.0"},
       {:uuid, "~> 1.1"}
     ]
   end

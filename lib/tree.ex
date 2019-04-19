@@ -128,7 +128,7 @@ defmodule Tree.Store do
   end
 
   def in_match(field, list) do
-    if length(list) != 0 do
+    unless is_empty_list(list) do
       for val <- list do
         {:==, field, val}
       end
