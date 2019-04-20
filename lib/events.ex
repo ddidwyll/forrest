@@ -13,7 +13,7 @@ defmodule Tree.Events do
   import Enum,
     only: [uniq: 1, find_value: 3]
 
-  @event [:time, :branch, :id, :action]
+  @struct [:time, :branch, :id, :action]
 
   def start_link(_) do
     start_link(
@@ -30,7 +30,7 @@ defmodule Tree.Events do
       [
         {:disc_copies, [node()]},
         {:type, :ordered_set},
-        {:attributes, @event}
+        {:attributes, @struct}
       ]
     )
 

@@ -428,6 +428,7 @@ defmodule Tree.Route do
     }
 
     req = set_resp_headers(@headers, req0)
+    IO.inspect(req)
     {:cowboy_rest, req, state}
   end
 
@@ -490,7 +491,12 @@ defmodule Tree.Route do
 
   @impl true
   def is_authorized(req, state) do
-    # info("is_authorized")
+    info("is_authorized")
+    IO.puts("user-agent")
+    IO.puts(req.headers["user-agent"])
+    IO.puts("ip")
+    {{a, b, c, d}, _} = req.peer
+    IO.puts("#{a}.#{b}.#{c}.#{d}")
     {true, req, state}
   end
 
@@ -539,3 +545,33 @@ defmodule Tree.Route do
     end
   end
 end
+
+@req %{
+  bindings: %{
+    branch: "deal",
+    from: "fcb2ecc3dd0e4c158d3e89f79bb9b7d5",
+    type: "rest"
+  },
+  body_length: 0,
+  cert: :undefined,
+  has_body: false,
+  headers: %{
+    "accept" => "*/*",
+    "host" => "localhost:8080",
+    "user-agent" => "curl/7.63.0"
+  },
+  host: "localhost",
+  host_info: :undefined,
+  method: "GET",
+  path: "/rest/deal/fcb2ecc3dd0e4c158d3e89f79bb9b7d5",
+  path_info: :undefined,
+  peer: {{127, 0, 0, 1}, 60230},
+  port: 8080,
+  qs: "",
+  ref: :http,
+  resp_headers: %{"github" => "ddidwyll/forrest", "server" => "forrest"},
+  scheme: "http",
+  sock: {{127, 0, 0, 1}, 8080},
+  streamid: 1,
+  version: :"HTTP/1.1"
+}
