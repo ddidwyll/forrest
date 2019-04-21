@@ -20,6 +20,7 @@ defmodule Forrest.MixProject do
 
   defp deps do
     [
+      {:pbkdf2_elixir, "~> 0.12"},
       {:cowboy, "~> 2.6.1"},
       {:jason, "~> 1.1"},
       {:joken, "~> 2.0"},

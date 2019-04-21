@@ -286,7 +286,7 @@ defmodule Tree.Main do
         {true, req, state}
 
       result == :ok && state.to ->
-        uri = "/tree/#{state.branch}/#{state.to}"
+        uri = "/rest/#{state.branch}/#{state.to}"
         {{true, uri}, req, state}
 
       true ->
@@ -546,32 +546,32 @@ defmodule Tree.Route do
   end
 end
 
-@req %{
-  bindings: %{
-    branch: "deal",
-    from: "fcb2ecc3dd0e4c158d3e89f79bb9b7d5",
-    type: "rest"
-  },
-  body_length: 0,
-  cert: :undefined,
-  has_body: false,
-  headers: %{
-    "accept" => "*/*",
-    "host" => "localhost:8080",
-    "user-agent" => "curl/7.63.0"
-  },
-  host: "localhost",
-  host_info: :undefined,
-  method: "GET",
-  path: "/rest/deal/fcb2ecc3dd0e4c158d3e89f79bb9b7d5",
-  path_info: :undefined,
-  peer: {{127, 0, 0, 1}, 60230},
-  port: 8080,
-  qs: "",
-  ref: :http,
-  resp_headers: %{"github" => "ddidwyll/forrest", "server" => "forrest"},
-  scheme: "http",
-  sock: {{127, 0, 0, 1}, 8080},
-  streamid: 1,
-  version: :"HTTP/1.1"
-}
+# @req %{
+#   bindings: %{
+#     branch: "deal",
+#     from: "fcb2ecc3dd0e4c158d3e89f79bb9b7d5",
+#     type: "rest"
+#   },
+#   body_length: 0,
+#   cert: :undefined,
+#   has_body: false,
+#   headers: %{
+#     "accept" => "*/*",
+#     "host" => "localhost:8080",
+#     "user-agent" => "curl/7.63.0"
+#   },
+#   host: "localhost",
+#   host_info: :undefined,
+#   method: "GET",
+#   path: "/rest/deal/fcb2ecc3dd0e4c158d3e89f79bb9b7d5",
+#   path_info: :undefined,
+#   peer: {{127, 0, 0, 1}, 60230},
+#   port: 8080,
+#   qs: "",
+#   ref: :http,
+#   resp_headers: %{"github" => "ddidwyll/forrest", "server" => "forrest"},
+#   scheme: "http",
+#   sock: {{127, 0, 0, 1}, 8080},
+#   streamid: 1,
+#   version: :"HTTP/1.1"
+# }

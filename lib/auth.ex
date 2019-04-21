@@ -3,28 +3,69 @@ defmodule Tree.Auth do
 
   use GenServer
   use Joken.Config
+
+  import Tree.Guards
   import Map, only: [put: 3]
+  import Jason, only: [encode!: 1]
   import Tree.Config, only: [env: 1]
   import Joken, only: [current_time: 0]
   import Joken.Signer, only: [create: 2]
 
+  import Pbkdf2,
+    only: [hash_pwd_salt: 1, verify_pass: 2]
+
   import GenServer,
     only: [call: 2, start_link: 3]
 
+  import :mnesia,
+    only: [
+      create_table: 2,
+      match_object: 1,
+      transaction: 1,
+      write: 1,
+      read: 2
+    ]
+
   @month 30 * 24 * 60 * 60
-  @struct [:id_st, :pass, :groups, :sessions]
+
+  @struct [
+    :id_st,
+    :pass,
+    :mail,
+    :groups,
+    :sessions,
+    :json
+  ]
+
+  @schema %{
+    "leafs" => %{
+      "id" => %{
+        "title" => "login",
+        "type" => "string",
+        "required" => true,
+        "min" => 3
+      },
+      "pass" => %{
+        "title" => "password",
+        "type" => "string",
+        "required" => true,
+        "min" => 3
+      },
+      "mail" => %{
+        "type" => "string",
+        "title" => "e-mail"
+      }
+    }
+  }
 
   def start_link(_) do
-    start_link(
-      __MODULE__,
-      nil,
-      name: :auth
-    )
+    __MODULE__
+    |> start_link(nil, name: :auth)
   end
 
   @impl true
   def init(_) do
-    :mnesia.create_table(
+    create_table(
       :auth,
       [
         {:disc_copies, [node()]},
@@ -87,7 +128,38 @@ defmodule Tree.Auth do
     {:reply, claims, state}
   end
 
-  def sid(req \\ @req) do
+  def get(id, status \\ :active) do
+    fn -> read(:auth, {id, status}) end
+    |> transaction()
+    |> first()
+  end
+
+  def status(id) do
+    fn ->
+      match_object({:auth, {id, :_}, :_, :_, :_, :_, :_})
+    end
+    |> transaction()
+    |> first()
+  end
+
+  defp first({:atomic, list}) when is_empty_list(list), do: nil
+  defp first({:atomic, list}), do: hd(list)
+
+  def signup(id, pass, mail, role \\ nil, status \\ :active) do
+    hash = hash_pwd_salt(pass)
+    groups = %{"system" => role || hd(env("roles"))}
+    json = "{\"id\":\"#{id}\",\"groups\":#{groups |> encode!}}"
+
+    {:auth, {id, status}, mail, hash, groups, %{}, json}
+    |> write_fn()
+  end
+
+  defp write_fn(tuple) do
+    fn -> write(tuple) end
+    |> transaction()
+  end
+
+  defp session_key(req) do
     {{a, b, c, d}, _} = req.peer
     ua = req.headers["user-agent"] || ""
     "{\"ip\":\"#{a}.#{b}.#{c}.#{d}\",\"ua\":\"#{ua}\"}"
