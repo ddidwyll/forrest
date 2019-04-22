@@ -9,6 +9,8 @@ defmodule Tree.Config do
   import List, only: [flatten: 1]
   import Regex, only: [compile: 1]
   import String, only: [to_atom: 1]
+  import Mix.Config, only: [persist: 1]
+  import Application, only: [get_env: 2]
   import Tree.Validator, only: [process: 2]
 
   import File,
@@ -260,6 +262,14 @@ defmodule Tree.Config do
       "upload_dir" => %{
         "title" => "files [upload_dir]",
         "type" => "string"
+      },
+      "registration" => %{
+        "title" => "user [registration]",
+        "type" => "bool"
+      },
+      "default_role" => %{
+        "title" => "user [default_role]",
+        "type" => "string"
       }
     }
   }
@@ -272,6 +282,8 @@ defmodule Tree.Config do
       "upload_dir" => "./priv/upload/",
       "secret" => "!!!CHANGE_ME!!!",
       "events_timeout" => 300_000,
+      "default_role" => "user",
+      "registration" => true,
       "host" => "localhost",
       "port" => 8080,
       "roles" => [
@@ -297,10 +309,10 @@ defmodule Tree.Config do
     errors = errors(config)
 
     if length(errors) == 0 do
-      {:ok, merge(@default_config, config)}
+      persist(%{forrest: merge(@default_config, config)})
     else
       error(inspect(errors))
-      {:ok, @default_config}
+      persist(%{forrest: @default_config})
     end
   end
 

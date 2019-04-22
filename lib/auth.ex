@@ -10,6 +10,7 @@ defmodule Tree.Auth do
   import Tree.Config, only: [env: 1]
   import Joken, only: [current_time: 0]
   import Joken.Signer, only: [create: 2]
+  import Tree.Validator, only: [process: 2]
 
   import Pbkdf2,
     only: [hash_pwd_salt: 1, verify_pass: 2]
@@ -145,9 +146,23 @@ defmodule Tree.Auth do
   defp first({:atomic, list}) when is_empty_list(list), do: nil
   defp first({:atomic, list}), do: hd(list)
 
-  def signup(id, pass, mail, role \\ nil, status \\ :active) do
+  def validate(id, pass, mail) do
+    cond do
+      status(id) ->
+        {:error, "Login already taken"}
+
+      !env("registration") ->
+        {:error, "Registration not allowed"}
+
+      true ->
+        %{"id" => id, "pass" => pass, "mail" => mail}
+        |> process(@schema)
+    end
+  end
+
+  def signup(id, pass, mail \\ "", role \\ nil, status \\ :active) do
     hash = hash_pwd_salt(pass)
-    groups = %{"system" => role || hd(env("roles"))}
+    groups = %{"system" => role || env("default_role")}
     json = "{\"id\":\"#{id}\",\"groups\":#{groups |> encode!}}"
 
     {:auth, {id, status}, mail, hash, groups, %{}, json}
@@ -162,10 +177,12 @@ defmodule Tree.Auth do
   defp session_key(req) do
     {{a, b, c, d}, _} = req.peer
     ua = req.headers["user-agent"] || ""
-    "{\"ip\":\"#{a}.#{b}.#{c}.#{d}\",\"ua\":\"#{ua}\"}"
+    ip = "#{a}.#{b}.#{c}.#{d}"
+    "{\"ip\":\"#{ip}\",\"ua\":\"#{ua}\"}"
   end
 
-  def sign(ip, ua, uid), do: call(:auth, {:sign, ip, ua, uid})
+  def sign(ip, ua, uid), do: generate_and_sign!(%{id: uid, sid: ip <> ua})
+  # def sign(ip, ua, uid), do: call(:auth, {:sign, ip, ua, uid})
   def claims(token), do: call(:auth, {:claims, token})
   def state, do: call(:auth, :state)
 end

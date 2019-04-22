@@ -84,8 +84,8 @@ defmodule Tree.Validator do
         !has_key?(model, key) && !required -> {key, nil}
         required && empty?(val) -> {title, "required"}
         wrong_type?(val, type) -> {title, "must be #{type}"}
-        min && len(val) <= min -> {title, "too small (min: #{min})"}
-        max && len(val) >= max -> {title, "too large (max: #{max})"}
+        min && len(val) < min -> {title, "too small (min: #{min})"}
+        max && len(val) > max -> {title, "too large (max: #{max})"}
         arr && val not in arr -> {title, "not in [#{join(arr, ", ")}]"}
         re && !Regex.match?(re, val) -> {title, "not match (#{inspect(re)})"}
         struct && struct?(val, struct) |> any? -> {title, struct?(val, struct) |> join(", ")}
