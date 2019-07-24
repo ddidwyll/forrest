@@ -69,6 +69,7 @@
           "type": "integer"
         },
         "value": {
+          "default": 100,
           "min": 0,
           "title": "value",
           "type": "integer"

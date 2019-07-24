@@ -7,26 +7,27 @@ defmodule Tree do
       add_table_index: 2
     ]
 
-  @struct [:id_br_st, :gid, :uid, :upd, :json]
+  @struct [:id, :a, :b, :upd, :json]
 
   def init do
-    table(:tree, :set, @struct)
-    table(:bag, :bag, @struct)
+    table(:tree, :set)
+    table(:meta, :bag)
+    table(:refs, :bag)
   end
 
-  defp table(name, type, attrs) do
+  defp table(name, type) do
     create_table(
       name,
       [
         {:disc_copies, [node()]},
-        {:attributes, attrs},
+        {:attributes, @struct},
         {:type, type}
       ]
     )
 
-    add_table_index(name, :uid)
-    add_table_index(name, :gid)
     add_table_index(name, :upd)
+    add_table_index(name, :a)
+    add_table_index(name, :b)
   end
 end
 
@@ -60,9 +61,7 @@ defmodule Tree.Store do
   @html [escape: :html_safe]
   @copy [strings: :copy]
 
-  defp now do
-    :os.system_time(:millisecond)
-  end
+  defp now, do: :os.system_time(:millisecond)
 
   def post(branch, uid, gid, rec0, status \\ :active) do
     id = uuid4(:hex)
@@ -99,9 +98,7 @@ defmodule Tree.Store do
   end
 
   def get_one(db, branch, id, status \\ :active) do
-    t = {id, branch, status}
-
-    fn -> read({db, t}) end
+    fn -> read({db, {id, branch, status}}) end
     |> transaction()
     |> list()
   end
@@ -302,8 +299,8 @@ defmodule Tree.Main do
              state.branch,
              state.from
            ),
-         true <- is_one_in_list(list),
-         [{_, _, gid, uid, upd, json}] <- list do
+         false <- is_empty_list(list),
+         {_, _, gid, uid, upd, json} <- hd(list) do
       {
         true,
         req,

@@ -1,8 +1,7 @@
 defmodule Tree.Config do
   @moduledoc false
 
-  use GenServer
-
+  import Tree.Guards
   import Map, only: [merge: 2]
   import Enum, only: [filter: 2]
   import Logger, only: [error: 1]
@@ -10,17 +9,14 @@ defmodule Tree.Config do
   import Regex, only: [compile: 1]
   import String, only: [to_atom: 1]
   import Mix.Config, only: [persist: 1]
-  import Application, only: [get_env: 2]
+  import Application, only: [get_env: 3]
   import Tree.Validator, only: [process: 2]
-
-  import File,
-    only: [read!: 1, write!: 2]
 
   import Jason,
     only: [decode!: 1, encode!: 2]
 
-  import GenServer,
-    only: [call: 2, cast: 2, start_link: 3]
+  import File,
+    only: [read!: 1, write!: 2]
 
   @config %{
     "leafs" => %{
@@ -295,68 +291,43 @@ defmodule Tree.Config do
     }
   }
 
-  def start_link(_) do
-    start_link(
-      __MODULE__,
-      nil,
-      name: :config
-    )
-  end
+  defp apply_config(old \\ %{}, new),
+    do: persist(%{forrest: merge(old, new)})
 
-  @impl true
-  def init(_) do
+  def init do
     config = load()
     errors = errors(config)
 
-    if length(errors) == 0 do
-      persist(%{forrest: merge(@default_config, config)})
+    if is_empty_list(errors) do
+      merge(config)
+      |> apply_config()
     else
       error(inspect(errors))
-      persist(%{forrest: @default_config})
+      apply_config(@default_config)
     end
   end
 
-  @impl true
-  def handle_call(:get, _, config) do
-    {:reply, config, config}
-  end
-
-  @impl true
-  def handle_call({:set, config_json}, _, old_config) do
+  def set_config(config_json) do
     with config <- load(config_json),
          [] <- errors(config),
-         settings <-
-           merge(
-             @default_config["settings"],
-             config["settings"] || %{}
-           ),
-         full <- merge(config, %{"settings" => settings}),
-         :ok <- save(full) do
-      {:reply, :ok, full}
+         full <- merge(config),
+         :ok <- save(config) do
+      apply_config(full)
     else
-      e -> {:reply, {:error, e}, old_config}
+      e -> {:error, e}
     end
   end
 
-  @impl true
-  def handle_cast({:add, type, branch, leaf, value}, config) do
-    branches = config["branches"]
+  defp add(type, branch, leaf \\ nil, value) do
+    current = get(type)
 
-    cond do
-      leaf && branches[branch]["leafs"][leaf] ->
-        l3 = merge(branches[branch][type] || %{}, %{leaf => value})
-        l2 = merge(branches[branch], %{type => l3})
-        l1 = merge(branches, %{branch => l2})
-        {:noreply, merge(config, %{"branches" => l1})}
-
-      is_nil(leaf) && branches[branch] ->
-        l2 = merge(branches[branch], %{type => value})
-        l1 = merge(branches, %{branch => l2})
-        {:noreply, merge(config, %{"branches" => l1})}
-
-      true ->
-        {:noreply, config}
+    if leaf do
+      br = merge(current[branch] || %{}, %{leaf => value})
+      %{type => merge(current, %{branch => br})}
+    else
+      %{type => merge(current, %{branch => value})}
     end
+    |> apply_config()
   end
 
   defp load(config_json \\ nil) do
@@ -380,6 +351,32 @@ defmodule Tree.Config do
         error(error)
         {:error, error}
     end
+  end
+
+  defp merge(config) do
+    settings =
+      merge(
+        @default_config["settings"],
+        config["settings"] || %{}
+      )
+
+    defaults = get("defaults")
+    regexps = get("regexps")
+    types = get("types")
+
+    branches =
+      for {key, branch} <- config["branches"], into: %{} do
+        {key,
+         branch
+         |> merge(%{"default" => defaults[key]})
+         |> merge(%{"regexp" => regexps[key]})
+         |> merge(%{"type" => types[key]})}
+      end
+
+    %{
+      "settings" => settings,
+      "branches" => branches
+    }
   end
 
   defp errors({:leafs, leafs, branch}) do
@@ -413,9 +410,9 @@ defmodule Tree.Config do
 
   defp errors({:branches, branches}) do
     for {name, branch} <- branches do
-      case process(branch, @branch) do
+      case(process(branch, @branch)) do
         {:ok, _} ->
-          add("type", name, branch["type"] |> to_atom)
+          add("types", name, branch["type"] |> to_atom)
 
           errors({:leafs, branch["leafs"], name}) ++
             errors({:other, branch["rules"], name, @rules})
@@ -448,12 +445,10 @@ defmodule Tree.Config do
     |> filter(& &1)
   end
 
-  defp add(type, branch, leaf \\ nil, value),
-    do: cast(:config, {:add, type, branch, leaf, value})
-
-  def get_config, do: call(:config, :get)
-  def env(key), do: get_config()["settings"][key]
-  def set_config(json), do: call(:config, {:set, json})
-  def rules(branch), do: get_config()["branches"][branch]
-  def schema(branch), do: get_config()["branches"][branch]
+  def get(key), do: get_env(:forrest, key, %{})
+  def env(key), do: get("settings")[key]
+  def regexp(branch, leaf), do: get("regexps")[branch][leaf]
+  def default(branch), do: get("defaults")[branch]
+  def schema(branch), do: get("branches")[branch]
+  def type(branch), do: get("types")[branch]
 end

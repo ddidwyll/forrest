@@ -71,7 +71,7 @@ defmodule Tree.Validator do
   defp errors(model, schema) do
     for {key, spec} <- schema["leafs"], into: %{} do
       title = spec["title"] <> ":"
-      re = schema["regexps"][key]
+      re = schema["regexp"][key]
       required = spec["required"]
       struct = spec["struct"]
       type = spec["type"]
@@ -99,7 +99,7 @@ defmodule Tree.Validator do
 
     unless values(errors) |> any? do
       result = model |> take(keys(errors))
-      default = schema["defaults"] || %{}
+      default = schema["default"] || %{}
       {:ok, merge(default, result)}
     else
       {:error, errors |> drop(keys(model))}

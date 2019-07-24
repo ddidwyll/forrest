@@ -146,9 +146,9 @@ defmodule Tree.Auth do
   defp first({:atomic, list}) when is_empty_list(list), do: nil
   defp first({:atomic, list}), do: hd(list)
 
-  def validate(id, pass, mail) do
+  def validate(id, pass, mail, is_new \\ true) do
     cond do
-      status(id) ->
+      is_new && status(id) ->
         {:error, "Login already taken"}
 
       !env("registration") ->
