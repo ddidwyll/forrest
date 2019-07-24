@@ -21,3 +21,4 @@ forrest-*.tar
 
 *_store
 Mnesia*
+/client/
