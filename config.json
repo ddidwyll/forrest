@@ -121,7 +121,7 @@
     "default_role": "user",
     "events_timeout": 300000,
     "host": "localhost",
-    "port": 8080,
+    "port": 36773,
     "registration": true,
     "roles": [
       "anon",
