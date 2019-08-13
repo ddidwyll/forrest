@@ -49,8 +49,7 @@ defmodule Tree.Validator do
     keys = struct["keys"]
 
     for {k, v} <- val do
-      (keys && k not in keys && "unknown key " <> k) ||
-        struct?(v, struct)
+      (keys && k not in keys && "unknown key " <> k) || struct?(v, struct)
     end
     |> filter(& &1)
   end

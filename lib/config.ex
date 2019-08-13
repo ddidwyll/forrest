@@ -332,8 +332,7 @@ defmodule Tree.Config do
 
   defp load(config_json \\ nil) do
     try do
-      (config_json ||
-         read!("config.json"))
+      (config_json || read!("config.json"))
       |> decode!()
     rescue
       e -> error("Invalid config, " <> inspect(e))

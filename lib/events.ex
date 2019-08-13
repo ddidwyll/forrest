@@ -85,7 +85,7 @@ defmodule Tree.Events do
   end
 end
 
-defmodule Tree.Events.Route do
+defmodule Tree.Events.Stream do
   @moduledoc false
 
   @behaviour :cowboy_loop
@@ -98,7 +98,8 @@ defmodule Tree.Events.Route do
   @headers %{
     "content-type" => "text/event-stream",
     "cache-control" => "no-cache",
-    "connection" => "keep-alive"
+    "connection" => "keep-alive",
+    "access-control-allow-origin" => "*"
   }
 
   @impl true
@@ -116,8 +117,7 @@ defmodule Tree.Events.Route do
 
     event = %{
       id: time,
-      event: branch,
-      data: "{\"id\":\"#{id}\",\"action\":\"#{action}\"}"
+      data: "{\"id\":\"#{id}\",\"branch\":\"#{branch}\",\"action\":\"#{action}\"}"
     }
 
     stream_events(event, :nofin, req)
@@ -178,7 +178,7 @@ defmodule Tree.Events.Store do
 
   def garbage() do
     day_ago =
-      (now() - 24 * 60 * 60 * 1000)
+      (now() - 30 * 24 * 60 * 60 * 1000)
       |> to_string
 
     fn ->
@@ -189,5 +189,35 @@ defmodule Tree.Events.Store do
       |> each(&Mnesia.delete({@db, &1}))
     end
     |> Mnesia.transaction()
+  end
+end
+
+defmodule Tree.Events.Route do
+  @moduledoc false
+
+  @behaviour :cowboy_handler
+
+  @headers %{
+    "content-type" => "application/json",
+    "access-control-allow-origin" => "*"
+  }
+
+  import Tree.Events.Store, only: [get: 1]
+  import :cowboy_req, only: [reply: 4]
+  import Enum, only: [join: 2]
+
+  @impl true
+  def init(req0, state) do
+    events =
+      for event <- get(req0.bindings[:last_id]) do
+        [time, branch, id, action] = event
+
+        "{\"id\":\"#{id}\",\"branch\":\"#{branch}\"," <>
+          "\"action\":\"#{action}\",\"time\":#{time}}"
+      end
+      |> join(",")
+
+    req = reply(200, @headers, "[" <> events <> "]", req0)
+    {:ok, req, state}
   end
 end

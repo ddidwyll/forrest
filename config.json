@@ -1,13 +1,13 @@
 {
   "branches": {
-    "company": {
+    "type": {
       "leafs": {
         "name": {
-          "default": "foo",
           "max": 80,
           "required": true,
           "title": "name",
-          "type": "string"
+          "type": "string",
+          "re": "^\\p{Alnum}*$"
         }
       },
       "rules": {
@@ -45,73 +45,8 @@
           "user"
         ]
       },
-      "title": "company",
-      "titles": "companies",
-      "type": "tree"
-    },
-    "deal": {
-      "leafs": {
-        "company": {
-          "arr": [
-            "foo",
-            "bar"
-          ],
-          "max": 80,
-          "re": "bar",
-          "required": true,
-          "title": "company",
-          "type": "string"
-        },
-        "created": {
-          "freeze": true,
-          "required": true,
-          "title": "created",
-          "type": "integer"
-        },
-        "value": {
-          "default": 100,
-          "min": 0,
-          "title": "value",
-          "type": "integer"
-        }
-      },
-      "rules": {
-        "delete_all": [
-          "admin"
-        ],
-        "delete_grp": [
-          "manager"
-        ],
-        "delete_own": [
-          "manager"
-        ],
-        "get_all": [
-          "user"
-        ],
-        "get_grp": [
-          "user"
-        ],
-        "get_own": [
-          "user"
-        ],
-        "patch_all": [
-          "admin"
-        ],
-        "patch_grp": [
-          "manager"
-        ],
-        "patch_own": [
-          "user"
-        ],
-        "post_grp": [
-          "user"
-        ],
-        "post_own": [
-          "user"
-        ]
-      },
-      "title": "deal",
-      "titles": "deals",
+      "title": "тип",
+      "titles": "типы",
       "type": "tree"
     }
   },
@@ -124,7 +59,7 @@
     "port": 36773,
     "registration": true,
     "roles": [
-      "anon",
+      "guest",
       "user",
       "manager",
       "admin"

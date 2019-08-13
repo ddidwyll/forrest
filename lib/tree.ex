@@ -7,7 +7,7 @@ defmodule Tree do
       add_table_index: 2
     ]
 
-  @struct [:id, :a, :b, :upd, :json]
+  @struct [:id, :to, :from, :upd, :json]
 
   def init do
     table(:tree, :set)
@@ -26,14 +26,16 @@ defmodule Tree do
     )
 
     add_table_index(name, :upd)
-    add_table_index(name, :a)
-    add_table_index(name, :b)
+    add_table_index(name, :to)
+    add_table_index(name, :from)
   end
 end
 
 #
 #
-#
+# TREE STORE
+# TREE STORE
+# TREE STORE
 #
 #
 
@@ -65,15 +67,17 @@ defmodule Tree.Store do
 
   def post(branch, uid, gid, rec0, status \\ :active) do
     id = uuid4(:hex)
+    now = now() |> to_string
 
     rec =
       rec0
       |> put("id", id)
       |> put("uid", uid)
       |> put("gid", gid)
+      |> put("upd", now)
 
     {:tree, {id, branch, status}, gid, uid}
-    |> post(rec)
+    |> post(rec, now)
   end
 
   defp post(tuple, rec, time \\ nil) do
@@ -140,15 +144,22 @@ defmodule Tree.Store do
     into(list, [], fn {_, _, _, _, _, json} -> json end)
   end
 
+  def list_json({:aborted, {:no_exists, nil}}), do: []
+
   def list_id({:atomic, list}) do
     into(list, [], fn {_, {id, _, _}, _, _, _, _} -> id end)
   end
+
+  def list_id({:aborted, {:no_exists, nil}}), do: []
 
   def list_status({:atomic, list}) do
     into(list, [], fn {_, {_, _, status}, _, _, _, _} -> status end)
   end
 
+  def list_status({:aborted, {:no_exists, nil}}), do: []
+
   def list({:atomic, list}) when is_list(list), do: list
+  def list({:aborted, {:no_exists, nil}}), do: []
 
   def map_id_json({:atomic, list}) do
     fun = fn {_, {id, _, _}, _, _, _, json} -> {id, json} end
@@ -161,7 +172,7 @@ defmodule Tree.Store do
     "{" <> str <> "}"
   end
 
-  def to_json(list) when is_empty_list(list), do: "[]"
+  def to_json([]), do: "[]"
 
   def to_json(list) when is_list(list),
     do: "[" <> join(list, ",") <> "]"
@@ -187,7 +198,9 @@ end
 
 #
 #
-#
+# TREE MAIN
+# TREE MAIN
+# TREE MAIN
 #
 #
 
@@ -197,6 +210,7 @@ defmodule Tree.Main do
   import Tree.Store
   import Tree.Guards
   import Tree.Validator
+  import Tree.Config, only: [env: 1]
   import Tree.Events, only: [event: 4]
   import String, only: [capitalize: 1]
 
@@ -283,8 +297,8 @@ defmodule Tree.Main do
         {true, req, state}
 
       result == :ok && state.to ->
-        uri = "/rest/#{state.branch}/#{state.to}"
-        {{true, uri}, req, state}
+        url = "//rest.#{env("host")}/#{state.branch}/#{state.to}"
+        {{true, url}, req, state}
 
       true ->
         {false, req, state}
@@ -337,7 +351,7 @@ defmodule Tree.Main do
         %{state | out: title(state) <> "blocked"}
 
       statuses == [:archived] || :archived in [statuses] ->
-        to = {true, "/archive/#{state.branch}/#{state.from}"}
+        to = {true, "//arch.#{env("host")}/#{state.branch}/#{state.from}"}
         %{state | out: title(state) <> "moved to archive", to: to}
     end
   end
@@ -355,7 +369,103 @@ end
 
 #
 #
+# TREE REST BUILDER
+# TREE REST BUILDER
+# TREE REST BUILDER
 #
+#
+
+defmodule Tree.RestBuilder do
+  @moduledoc false
+
+  @behaviour :cowboy_rest
+
+  defmacro __using__(_) do
+    alias Tree.RestBuilder, as: RB
+
+    quote do
+      defdelegate init(r, s), to: RB
+      defdelegate options(r, s), to: RB
+      defdelegate malformed_request(r, s), to: RB
+      defdelegate charsets_provided(r, s), to: RB
+      defdelegate is_authorized(r, s), to: RB
+    end
+  end
+
+  import :cowboy_req,
+    only: [
+      set_resp_headers: 2,
+      set_resp_body: 2
+    ]
+
+  import Tree.Config, only: [schema: 1]
+
+  @headers %{
+    "github" => "ddidwyll/forrest",
+    "server" => "forrest",
+    "access-control-allow-origin" => "*"
+  }
+
+  @headers_preflight %{
+    "access-control-allow-headers" => "*"
+  }
+
+  @utf8 "utf-8"
+
+  @impl true
+  def init(req0, _) do
+    state = %{
+      schema: schema(req0.bindings.branch),
+      branch: req0.bindings.branch,
+      from: req0.bindings[:from],
+      to: req0.bindings[:to],
+      uid: "ddidwyll",
+      gid: "work",
+      upd: nil,
+      out: nil,
+      in: nil
+    }
+
+    req = set_resp_headers(@headers, req0)
+    {:cowboy_rest, req, state}
+  end
+
+  @impl true
+  def options(req0, state) do
+    req = set_resp_headers(@headers_preflight, req0)
+    {:ok, req, state}
+  end
+
+  @impl true
+  def malformed_request(req, state) do
+    cond do
+      !state.schema ->
+        message = "\"Wrong branch #{state.branch}\""
+        {true, set_resp_body(message, req), state}
+
+      true ->
+        {false, req, state}
+    end
+  end
+
+  @impl true
+  def charsets_provided(req, state) do
+    {[@utf8], req, state}
+  end
+
+  @impl true
+  def is_authorized(req, state) do
+    {{a, b, c, d}, _} = req.peer
+    IO.puts("#{a}.#{b}.#{c}.#{d}")
+    {true, req, state}
+  end
+end
+
+#
+#
+# TREE ROUTE
+# TREE ROUTE
+# TREE ROUTE
 #
 #
 
@@ -364,26 +474,124 @@ defmodule Tree.Route do
 
   @behaviour :cowboy_rest
 
-  import :cowboy_req,
-    only: [
-      set_resp_headers: 2,
-      set_resp_body: 2
-    ]
+  use Tree.RestBuilder
+
+  import Tree.Store
+
+  @methods [
+    "OPTIONS",
+    "GET"
+  ]
+
+  @application_json {
+    "application",
+    "json",
+    :*
+  }
+
+  @to_json {
+    @application_json,
+    :to_json
+  }
+
+  @impl true
+  def allowed_methods(req, state) do
+    {@methods, req, state}
+  end
+
+  def to_json(req, state) do
+    json =
+      cond do
+        to == "user" && !is_nil(from) ->
+          get_by_user(type, branch, from)
+          |> list_json
+          |> to_json
+
+        to == "group" && !is_nil(from) ->
+          get_by_group(type, branch, from)
+          |> list_json
+          |> to_json
+
+        true ->
+          get_all(type, branch, :active, :_, :_)
+          |> list_json
+          |> to_json
+      end
+
+    {json, req, state}
+  end
+
+  @impl true
+  def content_types_provided(req, state) do
+    {[@to_json], req, state}
+  end
+
+  # import Tree.Store
+  # import Tree.Config, only: [type: 1]
+  # import :cowboy_req, only: [reply: 4]
+
+  # @headers %{
+  #   "github" => "ddidwyll/forrest",
+  #   "server" => "forrest",
+  #   "access-control-allow-origin" => "*",
+  #   "content-type" => "application/json"
+  # }
+
+  # @impl true
+  # def init(req0, _) do
+  #   branch = req0.bindings[:branch]
+  #   from = req0.bindings[:from]
+  #   to = req0.bindings[:to]
+  #   type = type(branch)
+
+  #   json =
+  #     cond do
+  #       to == "user" && !is_nil(from) ->
+  #         get_by_user(type, branch, from)
+  #         |> list_json
+  #         |> to_json
+  #       to == "group" && !is_nil(from) ->
+  #         get_by_group(type, branch, from)
+  #         |> list_json
+  #         |> to_json
+  #       true ->
+  #         get_all(type, branch, :active, :_, :_)
+  #         |> list_json
+  #         |> to_json
+  #     end
+
+  #   req = reply(200, @headers, json, req0)
+  #   {:ok, req, :nostate}
+  # end
+end
+
+#
+#
+# TREE REST
+# TREE REST
+# TREE REST
+#
+#
+
+defmodule Tree.Rest do
+  @moduledoc false
+
+  @behaviour :cowboy_rest
+
+  use Tree.RestBuilder
 
   import :erlang,
     only: [posixtime_to_universaltime: 1]
 
   import String, only: [slice: 3, to_integer: 1]
-  import Tree.Config, only: [schema: 1]
-  import Logger, only: [info: 1]
   import Tree.Main
 
   @methods [
     "OPTIONS",
     "DELETE",
-    "PATCH",
     "POST",
-    "GET"
+    "GET",
+    "PUT"
   ]
 
   @application_json {
@@ -402,78 +610,50 @@ defmodule Tree.Route do
     :from_json
   }
 
-  @utf8 "utf-8"
-
-  @headers %{
-    "github" => "ddidwyll/forrest",
-    "server" => "forrest"
-  }
-
-  @impl true
-  def init(req0, _) do
-    state = %{
-      schema: schema(req0.bindings.branch),
-      branch: req0.bindings.branch,
-      from: req0.bindings[:from],
-      type: req0.bindings.type,
-      to: req0.bindings[:to],
-      uid: "ddidwyll",
-      gid: "work",
-      upd: nil,
-      out: nil,
-      in: nil
-    }
-
-    req = set_resp_headers(@headers, req0)
-    IO.inspect(req)
-    {:cowboy_rest, req, state}
-  end
-
   @impl true
   def content_types_provided(req, state) do
-    # info("content_types_provided")
+    # info("CONTENT_TYPES_PROVIDED")
     {[@to_json], req, state}
   end
 
   @impl true
   def content_types_accepted(req, state) do
-    # info("content_types_accepted")
+    # info("CONTENT_TYPES_ACCEPTED")
     {[@from_json], req, state}
   end
 
   @impl true
   def allowed_methods(req, state) do
-    # info("allowed_methods")
     {@methods, req, state}
   end
 
   @impl true
-  def charsets_provided(req, state) do
-    # info("charsets_provided")
-    {[@utf8], req, state}
-  end
-
-  @impl true
   def delete_completed(req, state) do
-    # info("delete_completed")
+    # info("DELETE_COMPLETED")
     {false, req, state}
   end
 
   @impl true
   def delete_resource(req, state) do
-    # info("delete_resource")
+    # info("DELETE_RESOURCE")
     {false, req, state}
   end
 
   @impl true
+  def expires(req, state) do
+    # info("EXPIRES")
+    {:undefined, req, state}
+  end
+
+  @impl true
   def resource_exists(req, state) do
-    # info("resource_exists")
+    # info("RESOURCE_EXISTS")
     exist(req, state)
   end
 
   @impl true
   def previously_existed(req, state0) do
-    # info("previously_existed")
+    # info("PREVIOUSLY_EXISTED")
     state = status(state0)
 
     {!!state.out, req, state}
@@ -482,24 +662,26 @@ defmodule Tree.Route do
 
   @impl true
   def moved_permanently(req, state) do
-    # info("moved_permanently")
+    # info("MOVED_PERMANENTLY")
     {state.to || false, req, state}
   end
 
   @impl true
-  def is_authorized(req, state) do
-    info("is_authorized")
-    IO.puts("user-agent")
-    IO.puts(req.headers["user-agent"])
-    IO.puts("ip")
-    {{a, b, c, d}, _} = req.peer
-    IO.puts("#{a}.#{b}.#{c}.#{d}")
-    {true, req, state}
+  def rate_limited(req, state) do
+    # info("RATE_LIMITED")
+    {false, req, state}
+  end
+
+  @impl true
+  def generate_etag(req, state) do
+    # info("GENERATE_ETAG")
+    # IO.puts("etag", state.upd)
+    {{:weak, state.upd}, req, state}
   end
 
   @impl true
   def last_modified(req, state) do
-    # info("last_modified")
+    # info("LAST_MODIFIED")
 
     last_mod =
       state.upd
@@ -512,24 +694,8 @@ defmodule Tree.Route do
 
   @impl true
   def forbidden(req, state) do
-    # info("forbidden")
+    # info("FORBIDDEN")
     {false, req, state}
-  end
-
-  @impl true
-  def malformed_request(req, state) do
-    cond do
-      state.type not in ["rest", "archive"] ->
-        message = "\"Wrong type #{state.type}\""
-        {true, set_resp_body(message, req), state}
-
-      !state.schema ->
-        message = "\"Wrong branch #{state.branch}\""
-        {true, set_resp_body(message, req), state}
-
-      true ->
-        {false, req, state}
-    end
   end
 
   def to_json(req, state) do
