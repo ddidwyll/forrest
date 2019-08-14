@@ -117,7 +117,9 @@ defmodule Tree.Events.Stream do
 
     event = %{
       id: time,
-      data: "{\"id\":\"#{id}\",\"branch\":\"#{branch}\",\"action\":\"#{action}\"}"
+      data:
+        "{\"id\":\"#{id}\",\"branch\":\"#{branch}\"," <>
+          "\"action\":\"#{action}\",\"time\":\"#{time}\"}"
     }
 
     stream_events(event, :nofin, req)

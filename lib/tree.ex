@@ -502,18 +502,18 @@ defmodule Tree.Route do
   def to_json(req, state) do
     json =
       cond do
-        to == "user" && !is_nil(from) ->
-          get_by_user(type, branch, from)
+        state.to == "user" && !is_nil(state.from) ->
+          get_by_user(state.schema["type"], state.branch, state.from)
           |> list_json
           |> to_json
 
-        to == "group" && !is_nil(from) ->
-          get_by_group(type, branch, from)
+        state.to == "group" && !is_nil(state.from) ->
+          get_by_group(state.schema["type"], state.branch, state.from)
           |> list_json
           |> to_json
 
         true ->
-          get_all(type, branch, :active, :_, :_)
+          get_all(state.schema["type"], state.branch, :active, :_, :_)
           |> list_json
           |> to_json
       end
