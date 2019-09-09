@@ -122,6 +122,11 @@ defmodule Tree.Events.Stream do
           "\"action\":\"#{action}\",\"time\":\"#{time}\"}"
     }
 
+    IO.puts(
+      "{\"id\":\"#{id}\",\"branch\":\"#{branch}\"," <>
+        "\"action\":\"#{action}\",\"time\":\"#{time}\"}"
+    )
+
     stream_events(event, :nofin, req)
     {:ok, req, state, :hibernate}
   end

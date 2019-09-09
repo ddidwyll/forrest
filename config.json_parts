@@ -1,11 +1,11 @@
 {
   "branches": {
-    "cat": {
+    "type": {
       "leafs": {
         "name": {
           "max": 80,
           "required": true,
-          "title": "название",
+          "title": "name",
           "type": "string",
           "re": "^[a-zA-Zа-яА-Я0-9]*$"
         }
@@ -45,32 +45,26 @@
           "user"
         ]
       },
-      "title": "категория",
-      "titles": "категории",
+      "title": "тип",
+      "titles": "типы",
       "type": "tree"
     },
-    "food": {
+    "sug": {
       "leafs": {
         "name": {
           "max": 80,
           "required": true,
-          "title": "название",
+          "title": "name",
           "type": "string",
           "re": "^[a-zA-Zа-яА-Я0-9]*$"
         },
-        "cat": {
+        "type": {
           "min": 32,
           "max": 32,
           "required": true,
-          "title": "категория",
+          "title": "type",
           "type": "string",
           "re": "^[a-z0-9]*$"
-        },
-        "price": {
-          "min": 1,
-          "required": true,
-          "title": "цена",
-          "type": "integer"
         }
       },
       "rules": {
@@ -112,38 +106,22 @@
       "titles": "предложения",
       "type": "tree"
     },
-    "order": {
+    "req": {
       "leafs": {
-        "table": {
-          "min": 0,
-          "max": 1000,
+        "name": {
+          "max": 80,
           "required": true,
-          "title": "стол",
-          "type": "integer"
+          "title": "name",
+          "type": "string",
+          "re": "^[a-zA-Zа-яА-Я0-9]*$"
         },
-        "a": {
-          "type": "map",
-          "title": "клиент а"
-        },
-        "b": {
-          "type": "map",
-          "title": "клиент б"
-        },
-        "c": {
-          "type": "map",
-          "title": "клиент в"
-        },
-        "d": {
-          "type": "map",
-          "title": "клиент г"
-        },
-        "e": {
-          "type": "map",
-          "title": "клиент д"
-        },
-        "f": {
-          "type": "map",
-          "title": "клиент е"
+        "type": {
+          "min": 32,
+          "max": 32,
+          "required": true,
+          "title": "type",
+          "type": "string",
+          "re": "^[a-z0-9]*$"
         }
       },
       "rules": {
@@ -181,8 +159,8 @@
           "user"
         ]
       },
-      "title": "заказ",
-      "titles": "заказы",
+      "title": "запрос",
+      "titles": "запросы",
       "type": "tree"
     }
   },

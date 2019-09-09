@@ -291,8 +291,14 @@ defmodule Tree.Config do
     }
   }
 
-  defp apply_config(old \\ %{}, new),
-    do: persist(%{forrest: merge(old, new)})
+  defp apply_config(old \\ %{}, new) do
+    for {k, v} <- merge(old, new) do
+      Application.put_env(:forrest, k, v, persistent: true)
+    end
+    
+    
+    # persist(%{forrest: merge(old, new)})
+  end
 
   def init do
     config = load()

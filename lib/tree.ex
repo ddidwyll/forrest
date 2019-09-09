@@ -81,6 +81,7 @@ defmodule Tree.Store do
   end
 
   defp post(tuple, rec, time \\ nil) do
+    IO.puts('post')
     now = (time || now()) |> to_string
     json = encode!(rec, @html)
 
@@ -279,6 +280,7 @@ defmodule Tree.Main do
   end
 
   defp event({result, req, state}, action) do
+    IO.puts('event')
     if result == :ok do
       event(
         state.branch,
