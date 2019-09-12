@@ -295,8 +295,7 @@ defmodule Tree.Config do
     for {k, v} <- merge(old, new) do
       Application.put_env(:forrest, k, v, persistent: true)
     end
-    
-    
+
     # persist(%{forrest: merge(old, new)})
   end
 

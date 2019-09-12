@@ -191,8 +191,8 @@
     "client_entry": "./client/public/index.html",
     "default_role": "user",
     "events_timeout": 300000,
-    "host": "localhost",
-    "port": 36773,
+    "host": "pood.cf",
+    "port": 8081,
     "registration": true,
     "roles": [
       "guest",

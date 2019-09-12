@@ -20,7 +20,7 @@ defmodule Tree.Router do
     [
       {env("host"),
        [
-         {"/", :cowboy_static, {:file, env("client_entry")}}
+         {"/[...]", :cowboy_static, {:file, env("client_entry")}}
        ]},
       {"assets." <> env("host"),
        [
@@ -37,8 +37,7 @@ defmodule Tree.Router do
        ]},
       {"tree." <> env("host"),
        [
-         {"/batch/:branch/[:to]/[:from]", Tree.Route, nil},
-         # {"/archive/:branch/[:to]/[:from]", Tree.Route, nil},
+         {"/batch/:branch/[:to]/[:from]", Tree.Batch, nil},
          {"/rest/:branch/[:to]/[:from]", Tree.Rest, nil}
        ]}
     ]

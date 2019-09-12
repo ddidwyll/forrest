@@ -14,7 +14,8 @@ defmodule Forrest.MixProject do
   def application do
     [
       extra_applications: [:logger, :cowboy],
-      mod: {Forrest.Application, nil}
+      mod: {Forrest.Application, nil},
+      included_applications: [:mnesia]
     ]
   end
 
