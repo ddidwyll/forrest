@@ -57,14 +57,7 @@ defmodule Tree.Rest do
 
   @impl true
   def delete_resource(req, state) do
-    case Tree.Store.delete(state.branch, state.from) do
-      {:atomic, :ok} ->
-        {true, req, state}
-
-      err ->
-        IO.inspect(err)
-        {false, req, state}
-    end
+    delete({req, state})
   end
 
   @impl true
@@ -102,7 +95,6 @@ defmodule Tree.Rest do
 
   @impl true
   def last_modified(req, state) do
-
     last_mod =
       state.upd
       |> slice(0, 10)

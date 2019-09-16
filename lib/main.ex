@@ -17,6 +17,19 @@ defmodule Tree.Main do
   @copy [strings: :copy]
   @html [escape: :html_safe]
 
+  def delete({req, state}) do
+    unless state.to do
+      case delete(state.branch, state.from) do
+        {:atomic, :ok} ->
+          {true, req, state}
+
+        err ->
+          IO.inspect(err)
+          {false, req, state}
+      end
+    end
+  end
+
   defp get_body({req, state}) do
     with {:ok, json, _} <- read_body(req),
          {:ok, body} <- decode(json, @copy) do
@@ -73,8 +86,6 @@ defmodule Tree.Main do
   end
 
   defp event({result, req, state}, action) do
-    IO.puts('event')
-
     if result == :ok do
       event(
         state.branch,
