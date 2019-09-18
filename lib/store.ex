@@ -16,9 +16,9 @@ defmodule Tree.Store do
   import UUID, only: [uuid4: 1]
   import Tuple, only: [append: 2]
   import Enum, only: [into: 3, join: 2]
-  import String, only: [trim_trailing: 2]
   import Jason, only: [encode!: 2, decode!: 2]
   import List, only: [insert_at: 3, to_tuple: 1]
+  import String, only: [trim_trailing: 2, to_atom: 1]
 
   @html [escape: :html_safe]
   @copy [strings: :copy]
@@ -26,8 +26,31 @@ defmodule Tree.Store do
   defp now, do: :os.system_time(:millisecond)
 
   def delete(branch, id, status \\ :active) do
-    fn -> delete({:tree, {id, branch, status}}) end
-    |> transaction
+    {:atomic, result} =
+      fn -> delete({:tree, {id, branch, status}}) end
+      |> transaction
+
+    {result, now() |> to_string()}
+  end
+
+  def put(branch, id, status0, rec0) do
+    rec = %{rec0 | "upd" => now() |> to_string()}
+
+    status =
+      if status0 in ["deleted", "archived"] do
+        to_atom(status0)
+      else
+        delete(branch, id)
+        :undefined
+      end
+
+    {
+      :tree,
+      {id, branch, status},
+      rec["gid"],
+      rec["uid"]
+    }
+    |> post(rec, rec["upd"])
   end
 
   def post(branch, uid, gid, rec0, status \\ :active) do
@@ -46,7 +69,6 @@ defmodule Tree.Store do
   end
 
   defp post(tuple, rec, time \\ nil) do
-    IO.puts('post')
     now = (time || now()) |> to_string
     json = encode!(rec, @html)
 

@@ -17,19 +17,6 @@ defmodule Tree.Main do
   @copy [strings: :copy]
   @html [escape: :html_safe]
 
-  def delete({req, state}) do
-    unless state.to do
-      case delete(state.branch, state.from) do
-        {:atomic, :ok} ->
-          {true, req, state}
-
-        err ->
-          IO.inspect(err)
-          {false, req, state}
-      end
-    end
-  end
-
   defp get_body({req, state}) do
     with {:ok, json, _} <- read_body(req),
          {:ok, body} <- decode(json, @copy) do
@@ -79,19 +66,19 @@ defmodule Tree.Main do
         )
 
       message = title(state) <> "posted successful"
-      {:ok, req, %{state | from: time, to: id, out: message}}
+      {:ok, req, %{state | to: time, from: id, out: message}}
     else
       {result, req, state}
     end
   end
 
   defp event({result, req, state}, action) do
-    if result == :ok do
+    if result == true || result == :ok do
       event(
         state.branch,
-        state.to,
+        state.from,
         action,
-        state.from
+        state.to
       )
     end
 
@@ -171,5 +158,19 @@ defmodule Tree.Main do
     |> message()
     |> event("post")
     |> result()
+  end
+
+  def delete({req, state}) do
+    unless state.to do
+      case delete(state.branch, state.from) do
+        {:ok, time} ->
+          {true, req, %{state | to: time}}
+          |> event("delete")
+
+        err ->
+          IO.inspect(err)
+          {false, req, state}
+      end
+    end
   end
 end
