@@ -6,9 +6,9 @@ defmodule Tree.RestBuilder do
   defmacro __using__(_) do
     alias Tree.RestBuilder, as: RB
 
+    # defdelegate options(r, s), to: RB
     quote do
       defdelegate init(r, s), to: RB
-      defdelegate options(r, s), to: RB
       defdelegate malformed_request(r, s), to: RB
       defdelegate charsets_provided(r, s), to: RB
       defdelegate is_authorized(r, s), to: RB
