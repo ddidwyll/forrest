@@ -122,27 +122,27 @@
           "type": "integer"
         },
         "a": {
-          "type": "map",
+          "type": "array",
           "title": "клиент а"
         },
         "b": {
-          "type": "map",
+          "type": "array",
           "title": "клиент б"
         },
         "c": {
-          "type": "map",
+          "type": "array",
           "title": "клиент в"
         },
         "d": {
-          "type": "map",
+          "type": "array",
           "title": "клиент г"
         },
         "e": {
-          "type": "map",
+          "type": "array",
           "title": "клиент д"
         },
         "f": {
-          "type": "map",
+          "type": "array",
           "title": "клиент е"
         }
       },
