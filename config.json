@@ -59,18 +59,27 @@
           "re": "^[a-zA-Zа-яА-Я0-9]*$"
         },
         "cat": {
-          "min": 32,
           "max": 32,
           "required": true,
           "title": "категория",
           "type": "string",
-          "re": "^[a-z0-9]*$"
+          "re": "^[a-zA-Zа-яА-Я0-9]*$"
         },
         "price": {
           "min": 1,
           "required": true,
           "title": "цена",
           "type": "integer"
+        },
+        "available": {
+          "title": "доступность",
+          "type": "bool",
+          "default": false
+        },
+        "stop": {
+          "title": "стоп",
+          "type": "bool",
+          "default": false
         }
       },
       "rules": {
@@ -108,8 +117,8 @@
           "user"
         ]
       },
-      "title": "предложение",
-      "titles": "предложения",
+      "title": "блюдо",
+      "titles": "блюда",
       "type": "tree"
     },
     "order": {
@@ -120,6 +129,22 @@
           "required": true,
           "title": "стол",
           "type": "integer"
+        },
+        "status": {
+          "title": "статус",
+          "type": "string",
+          "default": "добавлен",
+          "arr": ["добавлен", "готов", "оплачен"]
+        },
+        "ready": {
+          "title": "готов",
+          "type": "array",
+          "max": 6
+        },
+        "paid": {
+          "title": "оплачен",
+          "type": "array",
+          "max": 6
         },
         "a": {
           "type": "array",
