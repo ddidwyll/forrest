@@ -16,7 +16,7 @@ defmodule Tree.Rest do
     "DELETE",
     "POST",
     "GET",
-    "PUT"
+    "PATCH"
   ]
 
   @application_json {
@@ -117,7 +117,7 @@ defmodule Tree.Rest do
   def from_json(req, state) do
     case req.method do
       "POST" -> post(req, state)
-      "PUT" -> put(req, state)
+      "PATCH" -> put(req, state)
     end
   end
 end
