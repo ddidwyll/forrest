@@ -34,6 +34,7 @@ defmodule Tree.Store do
   end
 
   def put(branch, id, status0, rec0) do
+    IO.inspect(rec0)
     rec = %{rec0 | "upd" => now() |> to_string()}
 
     status =
