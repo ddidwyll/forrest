@@ -46,7 +46,7 @@ defmodule Tree.Store do
     IO.inspect(rec)
 
     status =
-      if status0 in ["deleted", "archived"] do
+      if status0 in ["deleted", "archived", "active"] do
         to_atom(status0)
       else
         delete(branch, id)

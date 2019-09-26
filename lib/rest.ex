@@ -71,13 +71,13 @@ defmodule Tree.Rest do
     exist(req, state)
   end
 
-  # @impl true
-  # def previously_existed(req, state0) do
-    # state = status(state0)
+  @impl true
+  def previously_existed(req, state0) do
+    state = status(state0)
 
-    # {!!state.out, req, state}
-    # |> message()
-  # end
+    {!!state.out, req, state}
+    |> message()
+  end
 
   @impl true
   def moved_permanently(req, state) do
