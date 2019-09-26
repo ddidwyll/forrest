@@ -55,7 +55,7 @@ defmodule Tree.Main do
     capitalize(state.schema["title"]) <> " "
   end
 
-  defp write({result, req, state}) do
+  defp create({result, req, state}) do
     if result == :ok do
       {:ok, id, time} =
         post(
@@ -67,6 +67,23 @@ defmodule Tree.Main do
 
       message = title(state) <> "posted successful"
       {:ok, req, %{state | to: time, from: id, out: message}}
+    else
+      {result, req, state}
+    end
+  end
+
+  defp update({result, req, state}) do
+    if result == :ok do
+      {:ok, _, time} =
+        put(
+          state.branch,
+          state.from,
+          "active",
+          state.in
+        )
+
+      message = title(state) <> "updated successful"
+      {:ok, req, %{state | to: time, from: nil, out: message}}
     else
       {result, req, state}
     end
@@ -154,9 +171,19 @@ defmodule Tree.Main do
     {req, state}
     |> get_body()
     |> validate()
-    |> write()
+    |> create()
     |> message()
     |> event("post")
+    |> result()
+  end
+
+  def put(req, state) do
+    {req, state}
+    |> get_body()
+    |> validate()
+    |> update()
+    |> message()
+    |> event("put")
     |> result()
   end
 

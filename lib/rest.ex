@@ -67,6 +67,7 @@ defmodule Tree.Rest do
 
   @impl true
   def resource_exists(req, state) do
+    IO.puts("resource_exists")
     exist(req, state)
   end
 
@@ -116,6 +117,7 @@ defmodule Tree.Rest do
   def from_json(req, state) do
     case req.method do
       "POST" -> post(req, state)
+      "PUT" -> post(req, state)
     end
   end
 end
