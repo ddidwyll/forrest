@@ -73,6 +73,7 @@ defmodule Tree.Main do
   end
 
   defp update({result, req, state}) do
+    IO.puts("main_update")
     if result == :ok do
       {:ok, _, time} =
         put(

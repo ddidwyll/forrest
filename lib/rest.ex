@@ -117,7 +117,7 @@ defmodule Tree.Rest do
   def from_json(req, state) do
     case req.method do
       "POST" -> post(req, state)
-      "PUT" -> post(req, state)
+      "PUT" -> put(req, state)
     end
   end
 end
