@@ -88,7 +88,7 @@ defmodule Tree.Main do
         )
 
       message = title(state) <> "updated successful"
-      {:ok, req, %{state | to: time, out: message}}
+      {true, req, %{state | to: time, out: message}}
     else
       {result, req, state}
     end
