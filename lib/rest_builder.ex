@@ -35,8 +35,7 @@ defmodule Tree.RestBuilder do
     "access-control-allow-origin" => "*",
     "access-control-allow-headers" =>
       "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With",
-    "access-control-allow-methods" =>
-      "OPTIONS, DELETE, POST, PUT, GET"
+    "access-control-allow-methods" => "OPTIONS, DELETE, POST, PUT, GET"
   }
 
   @utf8 "utf-8"

@@ -33,9 +33,17 @@ defmodule Tree.Store do
     {result, now() |> to_string()}
   end
 
-  def put(branch, id, status0, rec0) do
+  def put(branch, id, uid, gid, status0, rec0) do
     IO.inspect(rec0)
-    rec = %{rec0 | "upd" => now() |> to_string()}
+
+    rec =
+      rec0
+      |> put("id", id)
+      |> put("uid", uid)
+      |> put("gid", gid)
+      |> put("upd", now() |> to_string())
+
+    IO.inspect(rec)
 
     status =
       if status0 in ["deleted", "archived"] do
