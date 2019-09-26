@@ -7,7 +7,7 @@
           "required": true,
           "title": "название",
           "type": "string",
-          "re": "^[a-zA-Zа-яА-Я0-9]*$"
+          "re": "^[A-Za-z0-9\- \u0400-\u04FF]*$"
         }
       },
       "rules": {
@@ -56,14 +56,14 @@
           "required": true,
           "title": "название",
           "type": "string",
-          "re": "^[a-zA-Zа-яА-Я0-9]*$"
+          "re": "^[A-Za-z0-9\- \u0400-\u04FF]*$"
         },
         "cat": {
           "max": 32,
           "required": true,
           "title": "категория",
           "type": "string",
-          "re": "^[a-zA-Zа-яА-Я0-9]*$"
+          "re": "^[A-Za-z0-9\- \u0400-\u04FF]*$"
         },
         "price": {
           "min": 1,
