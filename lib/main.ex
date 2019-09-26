@@ -88,7 +88,7 @@ defmodule Tree.Main do
         )
 
       message = title(state) <> "updated successful"
-      {:ok, req, %{state | to: time, from: nil, out: message}}
+      {:ok, req, %{state | to: time, out: message}}
     else
       {result, req, state}
     end
@@ -189,7 +189,6 @@ defmodule Tree.Main do
     |> update()
     |> message()
     |> event("put")
-    |> result()
   end
 
   def delete({req, state}) do
