@@ -93,6 +93,13 @@
           "title": "места",
           "type": "integer"
         },
+        "hall": {
+          "max": 60,
+          "title": "зал",
+          "type": "string",
+          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$",
+          "default": "Главный"
+        },
         "available": {
           "title": "доступность",
           "type": "bool",
@@ -141,11 +148,12 @@
     "order": {
       "leafs": {
         "table": {
-          "min": 0,
-          "max": 1000,
           "required": true,
           "title": "стол",
-          "type": "integer"
+          "type": "string",
+          "re": "^[a-z0-9]*$",
+          "min": 32,
+          "max": 32
         },
         "status": {
           "title": "статус",
