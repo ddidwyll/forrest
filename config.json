@@ -97,8 +97,7 @@
           "max": 60,
           "title": "зал",
           "type": "string",
-          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$",
-          "default": "Главный"
+          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
         },
         "available": {
           "title": "доступность",
