@@ -76,6 +76,11 @@
           "type": "bool",
           "default": false
         },
+        "multi": {
+          "title": "Множественный",
+          "type": "bool",
+          "default": false
+        },
         "stop": {
           "title": "стоп",
           "type": "bool",
