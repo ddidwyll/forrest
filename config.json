@@ -1,13 +1,41 @@
 {
   "branches": {
-    "cat": {
+    "food": {
       "leafs": {
         "name": {
-          "max": 80,
+          "max": 60,
           "required": true,
           "title": "название",
           "type": "string",
           "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
+        },
+        "cat": {
+          "max": 60,
+          "required": true,
+          "title": "категория",
+          "type": "string",
+          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
+        },
+        "price": {
+          "min": 1,
+          "required": true,
+          "title": "цена",
+          "type": "integer"
+        },
+        "available": {
+          "title": "доступность",
+          "type": "bool",
+          "default": false
+        },
+        "multi": {
+          "title": "Множественный",
+          "type": "bool",
+          "default": false
+        },
+        "stop": {
+          "title": "стоп",
+          "type": "bool",
+          "default": false
         }
       },
       "rules": {
@@ -45,44 +73,27 @@
           "user"
         ]
       },
-      "title": "категория",
-      "titles": "категории",
+      "title": "блюдо",
+      "titles": "блюда",
       "type": "tree"
     },
-    "food": {
+    "table": {
       "leafs": {
         "name": {
-          "max": 80,
+          "max": 60,
           "required": true,
           "title": "название",
           "type": "string",
           "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
         },
-        "cat": {
-          "max": 32,
-          "required": true,
-          "title": "категория",
-          "type": "string",
-          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
-        },
-        "price": {
+        "seats": {
           "min": 1,
           "required": true,
-          "title": "цена",
+          "title": "места",
           "type": "integer"
         },
         "available": {
           "title": "доступность",
-          "type": "bool",
-          "default": false
-        },
-        "multi": {
-          "title": "Множественный",
-          "type": "bool",
-          "default": false
-        },
-        "stop": {
-          "title": "стоп",
           "type": "bool",
           "default": false
         }
