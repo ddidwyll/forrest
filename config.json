@@ -88,6 +88,7 @@
         },
         "seats": {
           "min": 1,
+          "max": 25,
           "required": true,
           "title": "места",
           "type": "integer"
@@ -164,27 +165,103 @@
         },
         "a": {
           "type": "array",
-          "title": "клиент а"
+          "title": "клиент a"
         },
         "b": {
           "type": "array",
-          "title": "клиент б"
+          "title": "клиент b"
         },
         "c": {
           "type": "array",
-          "title": "клиент в"
+          "title": "клиент c"
         },
         "d": {
           "type": "array",
-          "title": "клиент г"
+          "title": "клиент d"
         },
         "e": {
           "type": "array",
-          "title": "клиент д"
+          "title": "клиент e"
         },
         "f": {
           "type": "array",
-          "title": "клиент е"
+          "title": "клиент f"
+        },
+        "g": {
+          "type": "array",
+          "title": "клиент g"
+        },
+        "g": {
+          "type": "array",
+          "title": "клиент g"
+        },
+        "h": {
+          "type": "array",
+          "title": "клиент h"
+        },
+        "i": {
+          "type": "array",
+          "title": "клиент i"
+        },
+        "j": {
+          "type": "array",
+          "title": "клиент j"
+        },
+        "k": {
+          "type": "array",
+          "title": "клиент k"
+        },
+        "l": {
+          "type": "array",
+          "title": "клиент l"
+        },
+        "m": {
+          "type": "array",
+          "title": "клиент m"
+        },
+        "n": {
+          "type": "array",
+          "title": "клиент n"
+        },
+        "o": {
+          "type": "array",
+          "title": "клиент o"
+        },
+        "p": {
+          "type": "array",
+          "title": "клиент p"
+        },
+        "r": {
+          "type": "array",
+          "title": "клиент r"
+        },
+        "s": {
+          "type": "array",
+          "title": "клиент s"
+        },
+        "t": {
+          "type": "array",
+          "title": "клиент t"
+        },
+        "v": {
+          "type": "array",
+          "title": "клиент v"
+        },
+        "w": {
+          "type": "array",
+          "title": "клиент w"
+        },
+        "x": {
+          "type": "array",
+          "title": "клиент x"
+        },
+        "y": {
+          "type": "array",
+          "title": "клиент y"
+        },
+        "z": {
+          "type": "array",
+          "title": "клиент z"
         }
       },
       "rules": {
