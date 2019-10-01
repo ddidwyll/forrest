@@ -3,14 +3,14 @@
     "food": {
       "leafs": {
         "name": {
-          "max": 60,
+          "max": 30,
           "required": true,
           "title": "название",
           "type": "string",
           "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
         },
         "cat": {
-          "max": 60,
+          "max": 30,
           "required": true,
           "title": "категория",
           "type": "string",
@@ -80,7 +80,7 @@
     "table": {
       "leafs": {
         "name": {
-          "max": 60,
+          "max": 30,
           "required": true,
           "title": "название",
           "type": "string",
@@ -94,10 +94,11 @@
           "type": "integer"
         },
         "hall": {
-          "max": 60,
+          "max": 30,
           "title": "зал",
           "type": "string",
-          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
+          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$",
+          "default": ""
         },
         "available": {
           "title": "доступность",
