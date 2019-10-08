@@ -145,6 +145,62 @@
       "titles": "блюда",
       "type": "tree"
     },
+    "invoice": {
+      "leafs": {
+        "orders": {
+          "min": 1,
+          "max": 50,
+          "required": true,
+          "title": "заказы",
+          "type": "map"
+        },
+        "lines": {
+          "min": 1,
+          "max": 200,
+          "required": true,
+          "title": "блюда",
+          "type": "array"
+        }
+      },
+      "rules": {
+        "delete_all": [
+          "admin"
+        ],
+        "delete_grp": [
+          "manager"
+        ],
+        "delete_own": [
+          "manager"
+        ],
+        "get_all": [
+          "user"
+        ],
+        "get_grp": [
+          "user"
+        ],
+        "get_own": [
+          "user"
+        ],
+        "patch_all": [
+          "admin"
+        ],
+        "patch_grp": [
+          "manager"
+        ],
+        "patch_own": [
+          "user"
+        ],
+        "post_grp": [
+          "user"
+        ],
+        "post_own": [
+          "user"
+        ]
+      },
+      "title": "блюдо",
+      "titles": "блюда",
+      "type": "tree"
+    },
     "order": {
       "leafs": {
         "table": {
