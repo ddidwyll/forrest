@@ -215,13 +215,7 @@
           "title": "готов",
           "type": "array",
           "default": [],
-          "max": 6
-        },
-        "paid": {
-          "title": "оплачен",
-          "type": "array",
-          "default": [],
-          "max": 6
+          "max": 25
         },
         "a": {
           "type": "array",
