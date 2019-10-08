@@ -155,20 +155,16 @@
           "min": 32,
           "max": 32
         },
-        "status": {
-          "title": "статус",
-          "type": "string",
-          "default": "добавлен",
-          "arr": ["добавлен", "готов", "оплачен"]
-        },
         "ready": {
           "title": "готов",
           "type": "array",
+          "default": [],
           "max": 6
         },
         "paid": {
           "title": "оплачен",
           "type": "array",
+          "default": [],
           "max": 6
         },
         "a": {

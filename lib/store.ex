@@ -24,6 +24,7 @@ defmodule Tree.Store do
   @copy [strings: :copy]
 
   defp now, do: :os.system_time(:millisecond)
+  defp id, do: :os.system_time() |> to_string
 
   def delete(branch, id, status \\ :active) do
     {:atomic, result} =
@@ -34,16 +35,12 @@ defmodule Tree.Store do
   end
 
   def put(branch, id, uid, gid, status0, rec0) do
-    IO.inspect(rec0)
-
     rec =
       rec0
       |> put("id", id)
       |> put("uid", uid)
       |> put("gid", gid)
       |> put("upd", now() |> to_string())
-
-    IO.inspect(rec)
 
     status =
       if status0 in ["deleted", "archived", "active"] do
@@ -63,7 +60,8 @@ defmodule Tree.Store do
   end
 
   def post(branch, uid, gid, rec0, status \\ :active) do
-    id = uuid4(:hex)
+    # id = uuid4(:hex)
+    id = id()
     now = now() |> to_string
 
     rec =
