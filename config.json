@@ -160,6 +160,11 @@
           "required": true,
           "title": "блюда",
           "type": "array"
+        },
+        "paid": {
+          "title": "оплачен",
+          "type": "bool",
+          "default": false
         }
       },
       "rules": {
