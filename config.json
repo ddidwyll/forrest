@@ -17,7 +17,6 @@
           "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
         },
         "price": {
-          "min": 1,
           "required": true,
           "title": "цена",
           "type": "integer"
@@ -206,6 +205,68 @@
       "titles": "блюда",
       "type": "tree"
     },
+    "coocked": {
+      "leafs": {
+        "orders": {
+          "min": 1,
+          "max": 50,
+          "required": true,
+          "title": "заказы",
+          "type": "map"
+        },
+        "table": {
+          "required": true,
+          "title": "стол",
+          "type": "string",
+          "re": "^[a-z0-9]*$",
+          "min": 32,
+          "max": 32
+        },
+        "served": {
+          "title": "подан",
+          "type": "bool",
+          "default": false
+        }
+      },
+      "rules": {
+        "delete_all": [
+          "admin"
+        ],
+        "delete_grp": [
+          "manager"
+        ],
+        "delete_own": [
+          "manager"
+        ],
+        "get_all": [
+          "user"
+        ],
+        "get_grp": [
+          "user"
+        ],
+        "get_own": [
+          "user"
+        ],
+        "patch_all": [
+          "admin"
+        ],
+        "patch_grp": [
+          "manager"
+        ],
+        "patch_own": [
+          "user"
+        ],
+        "post_grp": [
+          "user"
+        ],
+        "post_own": [
+          "user"
+        ]
+      },
+      "title": "блюдо",
+      "titles": "блюда",
+      "type": "tree"
+    },
     "order": {
       "leafs": {
         "table": {
@@ -215,12 +276,6 @@
           "re": "^[a-z0-9]*$",
           "min": 32,
           "max": 32
-        },
-        "ready": {
-          "title": "готов",
-          "type": "array",
-          "default": [],
-          "max": 25
         },
         "a": {
           "type": "array",
