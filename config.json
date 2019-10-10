@@ -218,7 +218,7 @@
           "required": true,
           "title": "стол",
           "type": "string",
-          "re": "^[a-z0-9]*$",
+          "re": "^[0-9]*$",
           "min": 32,
           "max": 32
         },
@@ -273,7 +273,7 @@
           "required": true,
           "title": "стол",
           "type": "string",
-          "re": "^[a-z0-9]*$",
+          "re": "^[0-9]*$",
           "min": 32,
           "max": 32
         },
