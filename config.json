@@ -219,8 +219,8 @@
           "title": "стол",
           "type": "string",
           "re": "^[0-9]*$",
-          "min": 32,
-          "max": 32
+          "min": 19,
+          "max": 19
         },
         "served": {
           "title": "подан",
@@ -274,8 +274,8 @@
           "title": "стол",
           "type": "string",
           "re": "^[0-9]*$",
-          "min": 32,
-          "max": 32
+          "min": 19,
+          "max": 19
         },
         "a": {
           "type": "array",
