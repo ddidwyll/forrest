@@ -207,6 +207,13 @@
     },
     "coocked": {
       "leafs": {
+        "name": {
+          "max": 30,
+          "required": true,
+          "title": "стол",
+          "type": "string",
+          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
+        },
         "orders": {
           "min": 1,
           "max": 50,
