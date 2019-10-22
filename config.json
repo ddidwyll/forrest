@@ -284,6 +284,30 @@
           "min": 19,
           "max": 19
         },
+        "coocked": {
+          "title": "готово",
+          "type": "array",
+          "default": [],
+          "max": 25
+        },
+        "awaiting": {
+          "title": "ожидает оплаты",
+          "type": "array",
+          "default": [],
+          "max": 25
+        },
+        "served": {
+          "title": "отдано",
+          "type": "array",
+          "default": [],
+          "max": 25
+        },
+        "paid": {
+          "title": "оплачено",
+          "type": "array",
+          "default": [],
+          "max": 25
+        },
         "a": {
           "type": "array",
           "title": "клиент a"
