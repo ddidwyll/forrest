@@ -58,17 +58,10 @@
   "settings": {
     "client_assets": "./client/public/",
     "client_entry": "./client/public/index.html",
-    "default_role": "user",
     "events_timeout": 300000,
     "host": "localhost",
     "port": 8080,
     "registration": true,
-    "roles": [
-      "anon",
-      "user",
-      "manager",
-      "admin"
-    ],
     "secret": "!!!CHANGE_ME!!!",
     "upload_dir": "./priv/upload/"
   }

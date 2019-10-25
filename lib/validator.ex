@@ -5,6 +5,7 @@ defmodule Tree.Validator do
 
   import Enum,
     only: [
+      with_index: 1,
       filter: 2,
       count: 1,
       join: 2,
@@ -46,8 +47,9 @@ defmodule Tree.Validator do
   defp collapse(val), do: to_string(val)
 
   defp struct?(val, struct) when is_list(val) do
-    for v <- val do
-      errors(v, struct) |> collapse
+    for {v, i} <- with_index(val) do
+      key = to_string(i)
+      errors(%{key => v}, %{key => struct}) |> collapse
     end
     |> collapse
   end
@@ -56,7 +58,7 @@ defmodule Tree.Validator do
     errors(val, struct) |> collapse
   end
 
-  defp errors(model, schema) when is_map(schema) do
+  defp errors(model, schema) when is_map(model) and is_map(schema) do
     for {key, spec} <- schema, is_map(spec), into: %{} do
       title = (spec["title"] || key) <> ":"
       required = spec["required"]
@@ -65,7 +67,8 @@ defmodule Tree.Validator do
       type = spec["type"]
       min = spec["min"]
       max = spec["max"]
-      arr = spec["arr"]
+      possible = spec["possible"]
+      impossible = spec["impossible"]
       val = model[key]
 
       cond do
@@ -84,14 +87,17 @@ defmodule Tree.Validator do
         max && len(val) > max ->
           {key, "#{title} too large (max: #{max})"}
 
-        arr && val not in arr ->
-          {key, "#{title} not in [#{join(arr, ", ")}]"}
+        struct && struct?(val, struct) != "" ->
+          {key, "#{title} #{struct?(val, struct)}"}
+
+        possible && val not in possible ->
+          {key, "#{title} not in [#{join(possible, ", ")}]"}
+
+        impossible && val in impossible ->
+          {key, "#{title} in [#{join(impossible, ", ")}]"}
 
         re && !Regex.match?(re, val) ->
           {key, "#{title} not match (#{inspect(re)})"}
-
-        struct && struct?(val, struct) != "" ->
-          {key, "#{title} #{struct?(val, struct)}"}
 
         true ->
           {key, nil}

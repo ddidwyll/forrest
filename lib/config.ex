@@ -2,11 +2,11 @@ defmodule Tree.Config do
   @moduledoc false
 
   import Tree.Guards
-  import Map, only: [merge: 2]
   import Enum, only: [filter: 2]
   import Logger, only: [error: 1]
   import List, only: [flatten: 1]
   import Regex, only: [compile: 1]
+  import Map, only: [merge: 2, put: 3]
   import Tree.Validator, only: [process: 2]
   import String, only: [to_atom: 1, split: 2]
   import Application, only: [get_env: 3, put_env: 4]
@@ -86,8 +86,12 @@ defmodule Tree.Config do
       "title" => "value [max]",
       "type" => "integer"
     },
-    "arr" => %{
-      "title" => "value [arr]ay",
+    "impossible" => %{
+      "title" => "value [impossible]",
+      "type" => "array"
+    },
+    "possible" => %{
+      "title" => "value [possible]",
       "type" => "array"
     },
     "re" => %{
@@ -115,14 +119,6 @@ defmodule Tree.Config do
       "type" => "integer",
       "min" => 0
     },
-    "roles" => %{
-      "title" => "user [roles]",
-      "type" => "array",
-      "struct" => %{
-        "type" => "string"
-      },
-      "min" => 1
-    },
     "client_entry" => %{
       "title" => "[client_entry] point",
       "type" => "string"
@@ -138,10 +134,6 @@ defmodule Tree.Config do
     "registration" => %{
       "title" => "user [registration]",
       "type" => "bool"
-    },
-    "default_role" => %{
-      "title" => "user [default_role]",
-      "type" => "string"
     }
   }
 
@@ -153,16 +145,9 @@ defmodule Tree.Config do
       "upload_dir" => "./priv/upload/",
       "secret" => "!!!CHANGE_ME!!!",
       "events_timeout" => 300_000,
-      "default_role" => "user",
       "registration" => true,
       "host" => "localhost",
-      "port" => 8080,
-      "roles" => [
-        "anon",
-        "user",
-        "manager",
-        "admin"
-      ]
+      "port" => 8080
     }
   }
 
@@ -273,6 +258,10 @@ defmodule Tree.Config do
       for {subname, subleaf} <- leaf["struct"], is_map(subleaf) do
         compile(branch, subleaf, "#{subname}#{@sep}struct#{@sep}#{name}")
       end
+    end
+
+    if !leaf["compiled"] && leaf["type"] == "array" && is_map(leaf["struct"]) do
+      compile(branch, put(leaf, "compiled", true)["struct"], "struct#{@sep}#{name}")
     end
   end
 

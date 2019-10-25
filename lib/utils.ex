@@ -21,7 +21,7 @@ end
 
 defmodule Tree.Utils do
   import Tree.Guards
-  
+
   def deep_merge(left, right) do
     Map.merge(left, right, &deep_resolve/3)
   end
@@ -41,14 +41,16 @@ defmodule Tree.Utils do
       !tmp0 ->
         tmp = %{key => value}
         deep_set(lvls, value, map, tmp)
+
       true ->
         tmp = deep_merge(%{}, %{key => tmp0})
         deep_set(lvls, value, map, tmp)
     end
   end
-  
+
   def deep_set(lvls, _, map0, tmp) when is_empty_list(lvls) do
     map = map0 || %{}
+
     if !tmp do
       map
     else
