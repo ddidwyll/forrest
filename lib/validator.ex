@@ -1,6 +1,8 @@
 defmodule Tree.Validator do
   @moduledoc false
 
+  import Tree.Utils, only: [deep_merge: 2]
+
   import Enum,
     only: [
       filter: 2,
@@ -11,10 +13,10 @@ defmodule Tree.Validator do
 
   import Map,
     only: [
+      new: 1,
+      keys: 1,
       take: 2,
       drop: 2,
-      keys: 1,
-      merge: 2,
       values: 1,
       has_key?: 2
     ]
@@ -38,41 +40,28 @@ defmodule Tree.Validator do
   defp wrong_type?(_, "any"), do: false
   defp wrong_type?(_, _), do: true
 
+  defp collapse(val) when is_map(val), do: val |> values |> collapse
+  defp collapse(val) when is_list(val), do: val |> filter(& &1) |> join(", ")
+  defp collapse(val) when is_binary(val), do: val
+  defp collapse(val), do: to_string(val)
+
   defp struct?(val, struct) when is_list(val) do
     for v <- val do
-      struct?(v, struct)
+      errors(v, struct) |> collapse
     end
-    |> filter(& &1)
+    |> collapse
   end
 
   defp struct?(val, struct) when is_map(val) do
-    keys = struct["keys"]
-
-    for {k, v} <- val do
-      (keys && k not in keys && "unknown key " <> k) || struct?(v, struct)
-    end
-    |> filter(& &1)
+    errors(val, struct) |> collapse
   end
 
-  defp struct?(val, struct) do
-    type = struct["type"]
-    min = struct["min"]
-    max = struct["max"]
-
-    cond do
-      type && wrong_type?(val, type) -> "#{val} must be #{type}"
-      min && len(val) <= min -> val <> " too small (min: #{min})"
-      max && len(val) >= max -> val <> " too large (max: #{max})"
-      true -> nil
-    end
-  end
-
-  defp errors(model, schema) do
-    for {key, spec} <- schema["leafs"], into: %{} do
-      title = spec["title"] <> ":"
-      re = schema["regexp"][key]
+  defp errors(model, schema) when is_map(schema) do
+    for {key, spec} <- schema, is_map(spec), into: %{} do
+      title = (spec["title"] || key) <> ":"
       required = spec["required"]
       struct = spec["struct"]
+      re = spec["regexp"]
       type = spec["type"]
       min = spec["min"]
       max = spec["max"]
@@ -80,28 +69,58 @@ defmodule Tree.Validator do
       val = model[key]
 
       cond do
-        !has_key?(model, key) && !required -> {key, nil}
-        required && empty?(val) -> {title, "required"}
-        wrong_type?(val, type) -> {title, "must be #{type}"}
-        min && len(val) < min -> {title, "too small (min: #{min})"}
-        max && len(val) > max -> {title, "too large (max: #{max})"}
-        arr && val not in arr -> {title, "not in [#{join(arr, ", ")}]"}
-        re && !Regex.match?(re, val) -> {title, "not match (#{inspect(re)})"}
-        struct && struct?(val, struct) |> any? -> {title, struct?(val, struct) |> join(", ")}
-        true -> {key, nil}
+        !has_key?(model, key) && !required ->
+          {key, nil}
+
+        required && empty?(val) ->
+          {key, "#{title} required"}
+
+        wrong_type?(val, type) ->
+          {key, "#{title} must be #{type}"}
+
+        min && len(val) < min ->
+          {key, "#{title} too small (min: #{min})"}
+
+        max && len(val) > max ->
+          {key, "#{title} too large (max: #{max})"}
+
+        arr && val not in arr ->
+          {key, "#{title} not in [#{join(arr, ", ")}]"}
+
+        re && !Regex.match?(re, val) ->
+          {key, "#{title} not match (#{inspect(re)})"}
+
+        struct && struct?(val, struct) != "" ->
+          {key, "#{title} #{struct?(val, struct)}"}
+
+        true ->
+          {key, nil}
       end
     end
   end
 
-  def process(model, schema) when is_map(model) do
-    errors = errors(model, schema)
+  def process(model, schema0) when is_map(model) and is_map(schema0) do
+    schema =
+      drop(schema0, [
+        "api_title",
+        "default",
+        "regexp",
+        "api_type",
+        "type",
+        "api_type"
+      ])
 
-    unless values(errors) |> any? do
-      result = model |> take(keys(errors))
-      default = schema["default"] || %{}
-      {:ok, merge(default, result)}
+    errors =
+      errors(model, schema)
+      |> filter(fn {_, v} -> !!v end)
+      |> new
+
+    if map_size(errors) == 0 do
+      result = model |> take(keys(schema))
+      default = schema0["default"] || %{}
+      {:ok, deep_merge(default, result)}
     else
-      {:error, errors |> drop(keys(model))}
+      {:error, errors}
     end
   end
 

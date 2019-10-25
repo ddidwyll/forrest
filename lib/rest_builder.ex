@@ -21,7 +21,7 @@ defmodule Tree.RestBuilder do
       set_resp_body: 2
     ]
 
-  import Tree.Config, only: [schema: 1]
+  import Tree.Config, only: [schema: 1, type: 1]
 
   @headers %{
     "github" => "ddidwyll/forrest",
@@ -44,6 +44,7 @@ defmodule Tree.RestBuilder do
   def init(req0, _) do
     state = %{
       schema: schema(req0.bindings.branch),
+      type: type(req0.bindings.branch),
       branch: req0.bindings.branch,
       from: req0.bindings[:from],
       to: req0.bindings[:to],
@@ -67,7 +68,7 @@ defmodule Tree.RestBuilder do
   @impl true
   def malformed_request(req, state) do
     cond do
-      !state.schema ->
+      !state.schema || !state.type ->
         message = "\"Wrong branch #{state.branch}\""
         {true, set_resp_body(message, req), state}
 
@@ -84,7 +85,7 @@ defmodule Tree.RestBuilder do
   @impl true
   def is_authorized(req, state) do
     {{a, b, c, d}, _} = req.peer
-    IO.puts("#{a}.#{b}.#{c}.#{d}")
+    # IO.puts("#{a}.#{b}.#{c}.#{d}")
     {true, req, state}
   end
 end

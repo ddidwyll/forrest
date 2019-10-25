@@ -32,21 +32,23 @@ defmodule Tree.Batch do
     json =
       cond do
         state.to == "user" && !is_nil(state.from) ->
-          get_by_user(state.schema["type"], state.branch, state.from)
+          get_by_user(state.type, state.branch, state.from)
           |> list_json
           |> to_json
 
         state.to == "group" && !is_nil(state.from) ->
-          get_by_group(state.schema["type"], state.branch, state.from)
+          get_by_group(state.type, state.branch, state.from)
           |> list_json
           |> to_json
 
         true ->
-          get_all(state.schema["type"], state.branch, :active, :_, :_)
+          get_all(state.type, state.branch, :active, :_, :_)
           |> list_json
           |> to_json
       end
 
+    IO.inspect(state)
+    IO.inspect(json)
     {json, req, state}
   end
 

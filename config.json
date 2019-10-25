@@ -1,452 +1,58 @@
 {
   "branches": {
-    "food": {
-      "leafs": {
-        "name": {
-          "max": 30,
-          "required": true,
-          "title": "название",
-          "type": "string",
-          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
-        },
-        "cat": {
-          "max": 30,
-          "required": true,
-          "title": "категория",
-          "type": "string",
-          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
-        },
-        "price": {
-          "required": true,
-          "title": "цена",
-          "type": "integer"
-        },
-        "available": {
-          "title": "доступность",
-          "type": "bool",
-          "default": false
-        },
-        "multi": {
-          "title": "Множественный",
-          "type": "bool",
-          "default": false
-        },
-        "stop": {
-          "title": "стоп",
-          "type": "bool",
-          "default": false
-        }
-      },
-      "rules": {
-        "delete_all": [
-          "admin"
-        ],
-        "delete_grp": [
-          "manager"
-        ],
-        "delete_own": [
-          "manager"
-        ],
-        "get_all": [
-          "user"
-        ],
-        "get_grp": [
-          "user"
-        ],
-        "get_own": [
-          "user"
-        ],
-        "patch_all": [
-          "admin"
-        ],
-        "patch_grp": [
-          "manager"
-        ],
-        "patch_own": [
-          "user"
-        ],
-        "post_grp": [
-          "user"
-        ],
-        "post_own": [
-          "user"
-        ]
-      },
-      "title": "блюдо",
-      "titles": "блюда",
-      "type": "tree"
-    },
-    "table": {
-      "leafs": {
-        "name": {
-          "max": 30,
-          "required": true,
-          "title": "название",
-          "type": "string",
-          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
-        },
-        "seats": {
-          "min": 1,
-          "max": 25,
-          "required": true,
-          "title": "места",
-          "type": "integer"
-        },
-        "hall": {
-          "max": 30,
-          "title": "зал",
-          "type": "string",
-          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$",
-          "default": ""
-        },
-        "available": {
-          "title": "доступность",
-          "type": "bool",
-          "default": false
-        }
-      },
-      "rules": {
-        "delete_all": [
-          "admin"
-        ],
-        "delete_grp": [
-          "manager"
-        ],
-        "delete_own": [
-          "manager"
-        ],
-        "get_all": [
-          "user"
-        ],
-        "get_grp": [
-          "user"
-        ],
-        "get_own": [
-          "user"
-        ],
-        "patch_all": [
-          "admin"
-        ],
-        "patch_grp": [
-          "manager"
-        ],
-        "patch_own": [
-          "user"
-        ],
-        "post_grp": [
-          "user"
-        ],
-        "post_own": [
-          "user"
-        ]
-      },
-      "title": "блюдо",
-      "titles": "блюда",
-      "type": "tree"
-    },
-    "invoice": {
-      "leafs": {
-        "name": {
-          "max": 30,
-          "required": true,
-          "title": "стол",
-          "type": "string",
-          "re": "^[A-Za-z0-9\\- \\u0400-\\u04FF]*$"
-        },
-        "orders": {
-          "min": 1,
-          "max": 50,
-          "required": true,
-          "title": "заказы",
-          "type": "map"
-        },
-        "lines": {
-          "min": 1,
-          "max": 200,
-          "required": true,
-          "title": "блюда",
-          "type": "array"
-        },
-        "paid": {
-          "title": "оплачен",
-          "type": "bool",
-          "default": false
-        }
-      },
-      "rules": {
-        "delete_all": [
-          "admin"
-        ],
-        "delete_grp": [
-          "manager"
-        ],
-        "delete_own": [
-          "manager"
-        ],
-        "get_all": [
-          "user"
-        ],
-        "get_grp": [
-          "user"
-        ],
-        "get_own": [
-          "user"
-        ],
-        "patch_all": [
-          "admin"
-        ],
-        "patch_grp": [
-          "manager"
-        ],
-        "patch_own": [
-          "user"
-        ],
-        "post_grp": [
-          "user"
-        ],
-        "post_own": [
-          "user"
-        ]
-      },
-      "title": "блюдо",
-      "titles": "блюда",
-      "type": "tree"
-    },
-    "coocked": {
-      "leafs": {
-        "orders": {
-          "min": 1,
-          "max": 50,
-          "required": true,
-          "title": "заказы",
-          "type": "map"
-        },
-        "table": {
-          "required": true,
-          "title": "стол",
-          "type": "string",
+    "obj": {
+      "api_title": "api_title",
+      "array": {
+        "min": 1,
+        "struct": {
+          "min": 10,
           "re": "^[0-9]*$",
-          "min": 19,
-          "max": 19
+          "type": "string"
         },
-        "served": {
-          "title": "подан",
-          "type": "bool",
-          "default": false
-        }
+        "title": "массив",
+        "type": "array"
       },
-      "rules": {
-        "delete_all": [
-          "admin"
-        ],
-        "delete_grp": [
-          "manager"
-        ],
-        "delete_own": [
-          "manager"
-        ],
-        "get_all": [
-          "user"
-        ],
-        "get_grp": [
-          "user"
-        ],
-        "get_own": [
-          "user"
-        ],
-        "patch_all": [
-          "admin"
-        ],
-        "patch_grp": [
-          "manager"
-        ],
-        "patch_own": [
-          "user"
-        ],
-        "post_grp": [
-          "user"
-        ],
-        "post_own": [
-          "user"
-        ]
+      "bool": {
+        "default": false,
+        "title": "bool",
+        "type": "bool"
       },
-      "title": "блюдо",
-      "titles": "блюда",
-      "type": "tree"
-    },
-    "order": {
-      "leafs": {
-        "table": {
-          "required": true,
-          "title": "стол",
-          "type": "string",
-          "re": "^[0-9]*$",
-          "min": 19,
-          "max": 19
+      "map": {
+        "default": {},
+        "struct": {
+          "a": {
+            "default": "name_a",
+            "re": "^[0-9]*$",
+            "title": "а",
+            "type": "string"
+          },
+          "b": {
+            "default": "name_b",
+            "title": "b",
+            "type": "string"
+          },
+          "c": {
+            "struct": {
+              "deep": {
+                "default": "deep",
+                "title": "deep",
+                "type": "string"
+              }
+            },
+            "title": "c",
+            "type": "map"
+          }
         },
-        "coocked": {
-          "title": "готово",
-          "type": "array",
-          "default": [],
-          "max": 25
-        },
-        "awaiting": {
-          "title": "ожидает оплаты",
-          "type": "array",
-          "default": [],
-          "max": 25
-        },
-        "served": {
-          "title": "отдано",
-          "type": "array",
-          "default": [],
-          "max": 25
-        },
-        "paid": {
-          "title": "оплачено",
-          "type": "array",
-          "default": [],
-          "max": 25
-        },
-        "a": {
-          "type": "array",
-          "title": "клиент a"
-        },
-        "b": {
-          "type": "array",
-          "title": "клиент b"
-        },
-        "c": {
-          "type": "array",
-          "title": "клиент c"
-        },
-        "d": {
-          "type": "array",
-          "title": "клиент d"
-        },
-        "e": {
-          "type": "array",
-          "title": "клиент e"
-        },
-        "f": {
-          "type": "array",
-          "title": "клиент f"
-        },
-        "g": {
-          "type": "array",
-          "title": "клиент g"
-        },
-        "g": {
-          "type": "array",
-          "title": "клиент g"
-        },
-        "h": {
-          "type": "array",
-          "title": "клиент h"
-        },
-        "i": {
-          "type": "array",
-          "title": "клиент i"
-        },
-        "j": {
-          "type": "array",
-          "title": "клиент j"
-        },
-        "k": {
-          "type": "array",
-          "title": "клиент k"
-        },
-        "l": {
-          "type": "array",
-          "title": "клиент l"
-        },
-        "m": {
-          "type": "array",
-          "title": "клиент m"
-        },
-        "n": {
-          "type": "array",
-          "title": "клиент n"
-        },
-        "o": {
-          "type": "array",
-          "title": "клиент o"
-        },
-        "p": {
-          "type": "array",
-          "title": "клиент p"
-        },
-        "r": {
-          "type": "array",
-          "title": "клиент r"
-        },
-        "s": {
-          "type": "array",
-          "title": "клиент s"
-        },
-        "t": {
-          "type": "array",
-          "title": "клиент t"
-        },
-        "v": {
-          "type": "array",
-          "title": "клиент v"
-        },
-        "w": {
-          "type": "array",
-          "title": "клиент w"
-        },
-        "x": {
-          "type": "array",
-          "title": "клиент x"
-        },
-        "y": {
-          "type": "array",
-          "title": "клиент y"
-        },
-        "z": {
-          "type": "array",
-          "title": "клиент z"
-        }
+        "title": "хеш",
+        "type": "map"
       },
-      "rules": {
-        "delete_all": [
-          "admin"
-        ],
-        "delete_grp": [
-          "manager"
-        ],
-        "delete_own": [
-          "manager"
-        ],
-        "get_all": [
-          "user"
-        ],
-        "get_grp": [
-          "user"
-        ],
-        "get_own": [
-          "user"
-        ],
-        "patch_all": [
-          "admin"
-        ],
-        "patch_grp": [
-          "manager"
-        ],
-        "patch_own": [
-          "user"
-        ],
-        "post_grp": [
-          "user"
-        ],
-        "post_own": [
-          "user"
-        ]
-      },
-      "title": "заказ",
-      "titles": "заказы",
-      "type": "tree"
+      "string": {
+        "default": "name",
+        "re": "^[0-9]*$",
+        "required": true,
+        "title": "строка",
+        "type": "string"
+      }
     }
   },
   "settings": {
@@ -454,11 +60,11 @@
     "client_entry": "./client/public/index.html",
     "default_role": "user",
     "events_timeout": 300000,
-    "host": "pood.cf",
-    "port": 8081,
+    "host": "localhost",
+    "port": 8080,
     "registration": true,
     "roles": [
-      "guest",
+      "anon",
       "user",
       "manager",
       "admin"

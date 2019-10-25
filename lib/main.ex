@@ -52,7 +52,7 @@ defmodule Tree.Main do
   end
 
   defp title(state) do
-    capitalize(state.schema["title"]) <> " "
+    state.branch
   end
 
   defp create({result, req, state}) do
@@ -65,7 +65,7 @@ defmodule Tree.Main do
           state.in
         )
 
-      message = title(state) <> "posted successful"
+      message = state.branch <> " posted successful"
       {:ok, req, %{state | to: time, from: id, out: message}}
     else
       {result, req, state}
@@ -73,9 +73,6 @@ defmodule Tree.Main do
   end
 
   defp update({result, req, state}) do
-    IO.puts("main_update")
-    IO.inspect(state.in)
-
     if result == :ok do
       {:ok, _, time} =
         put(
@@ -87,7 +84,7 @@ defmodule Tree.Main do
           state.in
         )
 
-      message = title(state) <> "updated successful"
+      message = title(state) <> " updated successful"
       {true, req, %{state | to: time, out: message}}
     else
       {result, req, state}
@@ -125,7 +122,7 @@ defmodule Tree.Main do
     with false <- is_nil(state.from),
          list <-
            get_one(
-             state.schema["type"],
+             state.type,
              state.branch,
              state.from
            ),
@@ -146,7 +143,7 @@ defmodule Tree.Main do
       if state.from,
         do:
           get_all(
-            state.schema["type"],
+            state.type,
             state.branch,
             :_,
             :_,
@@ -161,14 +158,14 @@ defmodule Tree.Main do
         state
 
       statuses == [:deleted] || :deleted in [statuses] ->
-        %{state | out: title(state) <> "deleted"}
+        %{state | out: title(state) <> " deleted"}
 
       statuses == [:blocked] || :blocked in [statuses] ->
-        %{state | out: title(state) <> "blocked"}
+        %{state | out: title(state) <> " blocked"}
 
       statuses == [:archived] || :archived in [statuses] ->
         to = {true, "//arch.#{env("host")}/#{state.branch}/#{state.from}"}
-        %{state | out: title(state) <> "moved to archive", to: to}
+        %{state | out: title(state) <> " moved to archive", to: to}
     end
   end
 
