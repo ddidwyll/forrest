@@ -2,12 +2,12 @@ defmodule Tree.Config do
   @moduledoc false
 
   import Tree.Guards
+  import Tree.Validator
+  import Map, only: [put: 3]
   import Enum, only: [filter: 2]
   import Logger, only: [error: 1]
   import List, only: [flatten: 1]
   import Regex, only: [compile: 1]
-  import Map, only: [merge: 2, put: 3]
-  import Tree.Validator, only: [process: 2]
   import String, only: [to_atom: 1, split: 2]
   import Application, only: [get_env: 3, put_env: 4]
   import Tree.Utils, only: [deep_merge: 2, deep_set: 3]
@@ -230,9 +230,16 @@ defmodule Tree.Config do
   defp merge(config) do
     branches =
       for {key, branch} <- config["branches"], into: %{} do
+        compile =
+          %{}
+          |> deep_merge(get("server_time")[key] || %{})
+          |> deep_merge(get("uid")[key] || %{})
+          |> deep_merge(get("gid")[key] || %{})
+
         {key,
          branch
          |> deep_merge(get("regexp")[key])
+         |> deep_merge(%{"compile" => compile})
          |> deep_merge(%{"defaults" => get("default")[key]})
          |> deep_merge(%{"type" => get("types")[key]})}
       end
@@ -254,6 +261,18 @@ defmodule Tree.Config do
       add_outside("default", branch, name, leaf["default"])
     end
 
+    if leaf["type"] == "server_time" do
+      add_outside("server_time", branch, name, :time)
+    end
+
+    if leaf["type"] == "uid" do
+      add_outside("uid", branch, name, :uid)
+    end
+
+    if leaf["type"] == "gid" do
+      add_outside("gid", branch, name, :gid)
+    end
+
     if leaf["type"] == "map" && is_map(leaf["struct"]) do
       for {subname, subleaf} <- leaf["struct"], is_map(subleaf) do
         compile(branch, subleaf, "#{subname}#{@sep}struct#{@sep}#{name}")
@@ -267,7 +286,7 @@ defmodule Tree.Config do
 
   defp errors({:leafs, leafs, branch}) do
     for {name, leaf} <- leafs, is_map(leaf) do
-      case process(leaf, @leaf) do
+      case process({leaf, @leaf}) do
         {:ok, _} ->
           compile(branch, leaf, name)
           nil
@@ -279,7 +298,7 @@ defmodule Tree.Config do
   end
 
   defp errors({:other, model, name, schema}) do
-    case process(model, schema) do
+    case process({model, schema}) do
       {:ok, _} -> [nil]
       {:error, errors} -> [%{name => errors}]
     end
@@ -287,7 +306,7 @@ defmodule Tree.Config do
 
   defp errors({:branches, branches}) do
     for {name, branch} <- branches do
-      case(process(branch, @branch)) do
+      case(process({branch, @branch})) do
         {:ok, _} ->
           add("types", name, (branch["api_type"] || "tree") |> to_atom)
           errors({:leafs, branch, name})
@@ -299,7 +318,7 @@ defmodule Tree.Config do
   end
 
   defp errors(config) do
-    case process(config, @config) do
+    case process({config, @config}) do
       {:error, errors} ->
         [%{"config" => errors}]
 
@@ -322,7 +341,6 @@ defmodule Tree.Config do
 
   def get(key), do: get_env(:forrest, key, %{})
   def env(key), do: get("settings")[key]
-  def regexp(branch, leaf), do: get("regexp")[branch][leaf]
   def default(branch), do: get("default")[branch]
   def type(branch), do: get("types")[branch]
   def schema(branch), do: get("branches")[branch]

@@ -44,6 +44,7 @@ defmodule Tree.RestBuilder do
   def init(req0, _) do
     state = %{
       schema: schema(req0.bindings.branch),
+      now: :os.system_time(:millisecond),
       type: type(req0.bindings.branch),
       branch: req0.bindings.branch,
       from: req0.bindings[:from],
@@ -84,7 +85,7 @@ defmodule Tree.RestBuilder do
 
   @impl true
   def is_authorized(req, state) do
-    {{a, b, c, d}, _} = req.peer
+    # {{a, b, c, d}, _} = req.peer
     # IO.puts("#{a}.#{b}.#{c}.#{d}")
     {true, req, state}
   end

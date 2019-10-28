@@ -1,15 +1,14 @@
 defmodule Tree.Validator do
   @moduledoc false
 
-  import Tree.Utils, only: [deep_merge: 2]
+  import Tree.Utils, only: [deep_merge: 2, deep_compile: 3]
 
   import Enum,
     only: [
       with_index: 1,
       filter: 2,
       count: 1,
-      join: 2,
-      any?: 1
+      join: 2
     ]
 
   import Map,
@@ -32,6 +31,9 @@ defmodule Tree.Validator do
   defp len(val) when is_number(val), do: val
   defp len(_), do: 0
 
+  defp wrong_type?(val, "server_time") when is_binary(val) or is_boolean(val), do: false
+  defp wrong_type?(val, "uid") when is_binary(val) or is_boolean(val), do: false
+  defp wrong_type?(val, "gid") when is_binary(val) or is_boolean(val), do: false
   defp wrong_type?(val, "integer") when is_integer(val), do: false
   defp wrong_type?(val, "number") when is_number(val), do: false
   defp wrong_type?(val, "string") when is_binary(val), do: false
@@ -105,10 +107,11 @@ defmodule Tree.Validator do
     end
   end
 
-  def process(model, schema0) when is_map(model) and is_map(schema0) do
+  def process({model, schema0}, substitution \\ %{}) when is_map(model) and is_map(schema0) do
     schema =
       drop(schema0, [
         "api_title",
+        "compile",
         "default",
         "regexp",
         "api_type",
@@ -123,8 +126,12 @@ defmodule Tree.Validator do
 
     if map_size(errors) == 0 do
       result = model |> take(keys(schema))
-      default = schema0["default"] || %{}
-      {:ok, deep_merge(default, result)}
+
+      {:ok,
+       %{}
+       |> deep_merge(schema0["default"] || %{})
+       |> deep_merge(result)
+       |> deep_compile(schema0["compile"], substitution)}
     else
       {:error, errors}
     end

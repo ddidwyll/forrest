@@ -21,18 +21,45 @@ end
 
 defmodule Tree.Utils do
   import Tree.Guards
+  import Map, only: [merge: 3]
 
-  def deep_merge(left, right) do
-    Map.merge(left, right, &deep_resolve/3)
+  def deep_compile(left, right, substitution)
+      when is_map(left) and is_map(right) and is_map(substitution) do
+    for {key, val} <- left, into: %{} do
+      cond do
+        is_map(val) && is_map(right[key]) ->
+          {key, deep_compile(val, right[key], substitution)}
+
+        val == true && is_atom(right[key]) ->
+          {key, substitution[right[key]]}
+
+        true ->
+          {key, val}
+      end
+    end
   end
 
-  defp deep_resolve(_key, left = %{}, right = %{}) do
-    deep_merge(left, right)
+  def deep_compile(left, _, _) when is_map(left) do
+    left
   end
 
-  defp deep_resolve(_key, _left, right) do
-    right
+  def deep_merge(left, right), do: merge(left, right, &deep_resolve/3)
+  defp deep_resolve(_key, left = %{}, right = %{}), do: deep_merge(left, right)
+  defp deep_resolve(_, _, right), do: right
+
+  def deep_get(lvls, map) when is_one_in_list(lvls) and is_map(map) do
+    [key] = lvls
+    map[key]
   end
+
+  def deep_get(lvls0, map) when is_nonempty_list(lvls0) and is_map(map) do
+    [key, lvls] = lvls0
+    deep_get(lvls, map[key])
+  end
+
+  def deep_get(key, map) when is_map(map), do: map[key]
+
+  def deep_get(_, _), do: nil
 
   def deep_set(lvls0, value, map, tmp0 \\ nil) when is_nonempty_list(lvls0) do
     [key | lvls] = lvls0

@@ -6,7 +6,6 @@ defmodule Tree.Main do
   import Tree.Validator
   import Tree.Config, only: [env: 1]
   import Tree.Events, only: [event: 4]
-  import String, only: [capitalize: 1]
 
   import :cowboy_req,
     only: [read_body: 1, set_resp_body: 2]
@@ -28,10 +27,19 @@ defmodule Tree.Main do
     end
   end
 
+  defp substitution(state) do
+    %{
+      time: state.now |> to_string,
+      uid: state.uid,
+      gid: state.gid
+    }
+  end
+
   defp validate({result, req, state}) do
     with :ok <- result,
          %{in: r, schema: s} <- state,
-         {:ok, rec} <- process(r, s) do
+         subs <- substitution(state),
+         {:ok, rec} <- process({r, s}, subs) do
       {:ok, req, %{state | in: rec}}
     else
       {:error, e} -> {:error, req, %{state | out: e}}

@@ -37,6 +37,12 @@
                 "default": "deep",
                 "title": "deep",
                 "type": "string"
+              },
+              "time": {
+                "type": "server_time"
+              },
+              "uid": {
+                "type": "uid"
               }
             },
             "title": "c",
@@ -52,6 +58,9 @@
         "required": true,
         "title": "строка",
         "type": "string"
+      },
+      "time": {
+        "type": "server_time"
       }
     }
   },
