@@ -8,9 +8,9 @@ defmodule Tree.Config do
   import Logger, only: [error: 1]
   import List, only: [flatten: 1]
   import Regex, only: [compile: 1]
-  import String, only: [to_atom: 1, split: 2]
   import Application, only: [get_env: 3, put_env: 4]
   import Tree.Utils, only: [deep_merge: 2, deep_set: 3]
+  import String, only: [to_atom: 1, split: 2, replace: 3]
 
   import Jason,
     only: [decode!: 1, encode!: 2]
@@ -184,7 +184,7 @@ defmodule Tree.Config do
   end
 
   defp add_outside(type, branch, leaf0, value) do
-    leaf = String.replace(leaf0, @sep <> "struct", "")
+    leaf = replace(leaf0, @sep <> "struct", "")
     add(type, branch, leaf, value)
   end
 
@@ -228,11 +228,14 @@ defmodule Tree.Config do
   end
 
   defp merge(config) do
+    IO.inspect(config["branches"])
+
     branches =
       for {key, branch} <- config["branches"], into: %{} do
         compile =
           %{}
           |> deep_merge(get("server_time")[key] || %{})
+          |> deep_merge(get("func")[key] || %{})
           |> deep_merge(get("uid")[key] || %{})
           |> deep_merge(get("gid")[key] || %{})
 
@@ -271,6 +274,14 @@ defmodule Tree.Config do
 
     if leaf["type"] == "gid" do
       add_outside("gid", branch, name, :gid)
+    end
+
+    if leaf["type"] == "func" && is_binary(leaf["func"]) do
+      f_name = :"#{branch}_#{replace(name, @sep, "_")}"
+
+      if Tree.Compiler.compile(leaf["func"], f_name) == :ok do
+        add_outside("func", branch, name, f_name)
+      end
     end
 
     if leaf["type"] == "map" && is_map(leaf["struct"]) do

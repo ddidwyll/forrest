@@ -22,13 +22,26 @@ end
 defmodule Tree.Utils do
   import Tree.Guards
   import Map, only: [merge: 3]
+  import Keyword, only: [has_key?: 2]
+
+  alias Tree.Functions
+
+  def func_exist(name) do
+    is_atom(name) &&
+      has_key?(Functions.__info__(:functions), name)
+  end
 
   def deep_compile(left, right, substitution)
       when is_map(left) and is_map(right) and is_map(substitution) do
+    IO.inspect(left)
+
     for {key, val} <- left, into: %{} do
       cond do
         is_map(val) && is_map(right[key]) ->
           {key, deep_compile(val, right[key], substitution)}
+
+        func_exist(right[key]) ->
+          {key, apply(Functions, right[key], [left])}
 
         val == true && is_atom(right[key]) ->
           {key, substitution[right[key]]}
@@ -43,7 +56,7 @@ defmodule Tree.Utils do
     left
   end
 
-  def deep_merge(left, right), do: merge(left, right, &deep_resolve/3)
+  def deep_merge(left, right), do: merge(left || %{}, right || %{}, &deep_resolve/3)
   defp deep_resolve(_key, left = %{}, right = %{}), do: deep_merge(left, right)
   defp deep_resolve(_, _, right), do: right
 
@@ -82,6 +95,25 @@ defmodule Tree.Utils do
       map
     else
       deep_merge(map, tmp)
+    end
+  end
+end
+
+defmodule Tree.Compiler do
+  def compile(string, name) do
+    with {:ok, func} <- Code.string_to_quoted(string) do
+      quote do
+        defmodule Tree.Functions do
+          def unquote(name)(struct) do
+            unquote(func).(struct || %{})
+          end
+        end
+      end
+      |> Code.compile_quoted()
+
+      :ok
+    else
+      _ -> :error
     end
   end
 end

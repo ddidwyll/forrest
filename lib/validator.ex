@@ -40,6 +40,7 @@ defmodule Tree.Validator do
   defp wrong_type?(val, "bool") when is_boolean(val), do: false
   defp wrong_type?(val, "array") when is_list(val), do: false
   defp wrong_type?(val, "map") when is_map(val), do: false
+  defp wrong_type?(_, "func"), do: false
   defp wrong_type?(_, "any"), do: false
   defp wrong_type?(_, _), do: true
 
@@ -129,7 +130,7 @@ defmodule Tree.Validator do
 
       {:ok,
        %{}
-       |> deep_merge(schema0["default"] || %{})
+       |> deep_merge(schema0["defaults"] || %{})
        |> deep_merge(result)
        |> deep_compile(schema0["compile"], substitution)}
     else

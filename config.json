@@ -2,65 +2,14 @@
   "branches": {
     "obj": {
       "api_title": "api_title",
-      "array": {
-        "min": 1,
-        "struct": {
-          "min": 10,
-          "re": "^[0-9]*$",
-          "type": "string"
-        },
-        "title": "массив",
-        "type": "array"
-      },
-      "bool": {
-        "default": false,
-        "title": "bool",
-        "type": "bool"
-      },
-      "map": {
-        "default": {},
-        "struct": {
-          "a": {
-            "default": "name_a",
-            "re": "^[0-9]*$",
-            "title": "а",
-            "type": "string"
-          },
-          "b": {
-            "default": "name_b",
-            "title": "b",
-            "type": "string"
-          },
-          "c": {
-            "struct": {
-              "deep": {
-                "default": "deep",
-                "title": "deep",
-                "type": "string"
-              },
-              "time": {
-                "type": "server_time"
-              },
-              "uid": {
-                "type": "uid"
-              }
-            },
-            "title": "c",
-            "type": "map"
-          }
-        },
-        "title": "хеш",
-        "type": "map"
-      },
-      "string": {
-        "default": "name",
-        "re": "^[0-9]*$",
+      "num": {
         "required": true,
-        "title": "строка",
-        "type": "string"
+        "type": "number"
       },
-      "time": {
-        "type": "server_time"
+      "res": {
+        "default": true,
+        "func": "& &1[\"num\"] * &1[\"num\"]",
+        "type": "func"
       }
     }
   },
