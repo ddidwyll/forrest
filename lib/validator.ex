@@ -45,14 +45,16 @@ defmodule Tree.Validator do
   defp wrong_type?(_, _), do: true
 
   defp collapse(val) when is_map(val), do: val |> values |> collapse
-  defp collapse(val) when is_list(val), do: val |> filter(& &1) |> join(", ")
-  defp collapse(val) when is_binary(val), do: val
-  defp collapse(val), do: to_string(val)
+  defp collapse(val) when is_list(val), do: val |> filter(& !!collapse(&1)) |> join(", ")
+  defp collapse(val) when is_binary(val), do: if val != "", do: val, else: nil
+  defp collapse(val), do: to_string(val) |> collapse
 
   defp struct?(val, struct) when is_list(val) do
     for {v, i} <- with_index(val) do
       key = to_string(i)
-      errors(%{key => v}, %{key => struct}) |> collapse
+      schema = if is_map(struct), do: struct, else: %{key => struct}
+      IO.inspect({"error in array", errors(%{key => v}, schema) |> collapse})
+      errors(%{key => v}, schema) |> collapse
     end
     |> collapse
   end
@@ -62,12 +64,15 @@ defmodule Tree.Validator do
   end
 
   defp errors(model, schema) when is_map(model) and is_map(schema) do
+    IO.inspect "========= errors ========="
+    IO.inspect {"model", model}
+    IO.inspect {"schema", schema}
     for {key, spec} <- schema, is_map(spec), into: %{} do
       title = (spec["title"] || key) <> ":"
       required = spec["required"]
       struct = spec["struct"]
       re = spec["regexp"]
-      type = spec["type"]
+      type = spec["type"] || "string"
       min = spec["min"]
       max = spec["max"]
       possible = spec["possible"]

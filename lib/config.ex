@@ -228,8 +228,6 @@ defmodule Tree.Config do
   end
 
   defp merge(config) do
-    IO.inspect(config["branches"])
-
     branches =
       for {key, branch} <- config["branches"], into: %{} do
         compile =

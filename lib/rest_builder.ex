@@ -69,7 +69,7 @@ defmodule Tree.RestBuilder do
   @impl true
   def malformed_request(req, state) do
     cond do
-      !state.schema || !state.type ->
+      !state.schema ->
         message = "\"Wrong branch #{state.branch}\""
         {true, set_resp_body(message, req), state}
 

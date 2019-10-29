@@ -2,14 +2,13 @@
   "branches": {
     "obj": {
       "api_title": "api_title",
-      "num": {
-        "required": true,
-        "type": "number"
-      },
-      "res": {
-        "default": true,
-        "func": "& &1[\"num\"] * &1[\"num\"]",
-        "type": "func"
+      "arr": {
+        "struct": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "type": "array"
       }
     }
   },

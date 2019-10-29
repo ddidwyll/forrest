@@ -19,6 +19,9 @@ defmodule Tree.Guards do
            when is_map(map) and map_size(map) == 0
 end
 
+defmodule Tree.Functions do
+end
+
 defmodule Tree.Utils do
   import Tree.Guards
   import Map, only: [merge: 3]
@@ -26,15 +29,13 @@ defmodule Tree.Utils do
 
   alias Tree.Functions
 
-  def func_exist(name) do
+  defp func_exist(name) do
     is_atom(name) &&
       has_key?(Functions.__info__(:functions), name)
   end
 
   def deep_compile(left, right, substitution)
       when is_map(left) and is_map(right) and is_map(substitution) do
-    IO.inspect(left)
-
     for {key, val} <- left, into: %{} do
       cond do
         is_map(val) && is_map(right[key]) ->
@@ -62,13 +63,15 @@ defmodule Tree.Utils do
 
   def deep_get(lvls, map) when is_one_in_list(lvls) and is_map(map) do
     [key] = lvls
-    map[key]
+    if key == "", do: map, else: map[key]
   end
 
   def deep_get(lvls0, map) when is_nonempty_list(lvls0) and is_map(map) do
     [key, lvls] = lvls0
     deep_get(lvls, map[key])
   end
+
+  def deep_get(lvls, map) when is_empty_list(lvls) and is_map(map), do: map
 
   def deep_get(key, map) when is_map(map), do: map[key]
 

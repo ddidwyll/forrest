@@ -1,17 +1,20 @@
 defmodule Tree.Main do
   @moduledoc false
 
+  import Tree.Utils
   import Tree.Store
   import Tree.Guards
   import Tree.Validator
-  import Tree.Config, only: [env: 1]
   import Tree.Events, only: [event: 4]
+  import Tree.Config, only: [env: 1, schema: 1]
+
+  import String, only: [split: 2]
 
   import :cowboy_req,
     only: [read_body: 1, set_resp_body: 2]
 
   import Jason,
-    only: [decode: 2, encode!: 2]
+    only: [decode: 2, decode!: 2, encode!: 2]
 
   @copy [strings: :copy]
   @html [escape: :html_safe]
@@ -35,15 +38,63 @@ defmodule Tree.Main do
     }
   end
 
+  defp rise({result, req, state}) do
+    IO.inspect {"rise", result}
+    with :ok <- result,
+         lvls <- split(state.to || "", ","),
+         schema <- deep_get(lvls, state.schema),
+         true <- schema["type"] == "array",
+         struct <- schema["struct"],
+         true <- is_map(struct) do
+      {:ok, req, %{state | schema: struct, to: lvls}}
+    else
+      err ->
+        IO.inspect(err)
+        message = "You cannot put #{state.in}"
+        {:error, req, %{state | out: message}}
+    end
+  end
+
+  defp sit({result, req, state}) do
+    IO.inspect {"sit", result}
+    with :ok <- result,
+         rec0 <- decode!(state.out, @copy),
+         arr <- [state.in | deep_get(state.to, rec0) || []],
+         rec <- deep_set(state.to, arr, rec0) do
+      {result, req, %{state | schema: schema(state.branch), to: nil, in: rec}}
+    else
+      err ->
+        IO.inspect({"sit", err})
+        {result, req, state}
+    end
+  end
+
+  defp merge({result, req, state}) do
+    if result == :ok do
+      rec =
+        decode!(state.out, @copy)
+        |> deep_merge(state.in)
+
+      {result, req, %{state | in: rec}}
+    else
+      {result, req, state}
+    end
+  end
+
   defp validate({result, req, state}) do
+    IO.inspect {"validate", result}
     with :ok <- result,
          %{in: r, schema: s} <- state,
          subs <- substitution(state),
          {:ok, rec} <- process({r, s}, subs) do
       {:ok, req, %{state | in: rec}}
     else
-      {:error, e} -> {:error, req, %{state | out: e}}
-      _ -> {:error, req, state}
+      {:error, e} ->
+        IO.inspect(e)
+        {:error, req, %{state | out: e}}
+      err ->
+        IO.inspect(err)
+        {:error, req, state}
     end
   end
 
@@ -81,6 +132,7 @@ defmodule Tree.Main do
   end
 
   defp update({result, req, state}) do
+    IO.inspect {"update", result}
     if result == :ok do
       {:ok, _, time} =
         put(
@@ -95,7 +147,7 @@ defmodule Tree.Main do
       message = title(state) <> " updated successful"
       {true, req, %{state | to: time, out: message}}
     else
-      {result, req, state}
+      {result, req, %{state | out: "something went wrong"}}
     end
   end
 
@@ -139,7 +191,7 @@ defmodule Tree.Main do
       {
         true,
         req,
-        %{state | gid: gid, uid: uid, upd: upd, out: json}
+        %{state | upd: upd, out: json}
       }
     else
       _ -> {false, req, state}
@@ -187,13 +239,26 @@ defmodule Tree.Main do
     |> result()
   end
 
-  def put(req, state) do
+  def patch(req, state) do
     {req, state}
     |> get_body()
+    |> merge()
     |> validate()
     |> update()
     |> message()
-    |> event("put")
+    |> event("patch")
+  end
+
+  def put(req, state) do
+    {req, state}
+    |> get_body()
+    |> rise()
+    |> validate()
+    |> sit()
+    |> validate()
+    |> update()
+    |> message()
+    |> event("patch")
   end
 
   def delete({req, state}) do
