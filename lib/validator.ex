@@ -53,7 +53,6 @@ defmodule Tree.Validator do
     for {v, i} <- with_index(val) do
       key = to_string(i)
       schema = if is_map(struct), do: struct, else: %{key => struct}
-      IO.inspect({"error in array", errors(%{key => v}, schema) |> collapse})
       errors(%{key => v}, schema) |> collapse
     end
     |> collapse
@@ -64,9 +63,6 @@ defmodule Tree.Validator do
   end
 
   defp errors(model, schema) when is_map(model) and is_map(schema) do
-    IO.inspect "========= errors ========="
-    IO.inspect {"model", model}
-    IO.inspect {"schema", schema}
     for {key, spec} <- schema, is_map(spec), into: %{} do
       title = (spec["title"] || key) <> ":"
       required = spec["required"]

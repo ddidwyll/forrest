@@ -39,9 +39,9 @@ defmodule Tree.Main do
   end
 
   defp rise({result, req, state}) do
-    IO.inspect {"rise", result}
     with :ok <- result,
-         lvls <- split(state.to || "", ","),
+         true <- is_binary(state.to),
+         lvls <- split(state.to, ","),
          schema <- deep_get(lvls, state.schema),
          true <- schema["type"] == "array",
          struct <- schema["struct"],
@@ -49,14 +49,13 @@ defmodule Tree.Main do
       {:ok, req, %{state | schema: struct, to: lvls}}
     else
       err ->
-        IO.inspect(err)
-        message = "You cannot put #{state.in}"
+        IO.inspect({"rise", err})
+        message = "Unable to push into #{state.to} of #{state.branch}"
         {:error, req, %{state | out: message}}
     end
   end
 
   defp sit({result, req, state}) do
-    IO.inspect {"sit", result}
     with :ok <- result,
          rec0 <- decode!(state.out, @copy),
          arr <- [state.in | deep_get(state.to, rec0) || []],
@@ -82,7 +81,6 @@ defmodule Tree.Main do
   end
 
   defp validate({result, req, state}) do
-    IO.inspect {"validate", result}
     with :ok <- result,
          %{in: r, schema: s} <- state,
          subs <- substitution(state),
@@ -90,10 +88,10 @@ defmodule Tree.Main do
       {:ok, req, %{state | in: rec}}
     else
       {:error, e} ->
-        IO.inspect(e)
+        IO.inspect({"validate", e})
         {:error, req, %{state | out: e}}
       err ->
-        IO.inspect(err)
+        IO.inspect({"validate", err})
         {:error, req, state}
     end
   end
@@ -132,7 +130,6 @@ defmodule Tree.Main do
   end
 
   defp update({result, req, state}) do
-    IO.inspect {"update", result}
     if result == :ok do
       {:ok, _, time} =
         put(
@@ -147,12 +144,12 @@ defmodule Tree.Main do
       message = title(state) <> " updated successful"
       {true, req, %{state | to: time, out: message}}
     else
-      {result, req, %{state | out: "something went wrong"}}
+      {false, req, %{state | out: state.out || "something went wrong"}}
     end
   end
 
   defp event({result, req, state}, action) do
-    if result == true || result == :ok do
+    if result in [true, :ok] do
       event(
         state.branch,
         state.from,
@@ -269,7 +266,7 @@ defmodule Tree.Main do
           |> event("delete")
 
         err ->
-          IO.inspect(err)
+          IO.inspect({"delete", err})
           {false, req, state}
       end
     end

@@ -47,8 +47,6 @@ defmodule Tree.Batch do
           |> to_json
       end
 
-    IO.inspect(state)
-    IO.inspect(json)
     {json, req, state}
   end
 
