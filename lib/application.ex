@@ -6,8 +6,8 @@ defmodule Forrest.Application do
 
   def start(_, _) do
     children = [
-      Tree.Events,
-      Tree.Auth
+      Tree.Events
+      # Tree.Auth
     ]
 
     opts = [

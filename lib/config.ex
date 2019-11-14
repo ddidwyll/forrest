@@ -2,15 +2,15 @@ defmodule Tree.Config do
   @moduledoc false
 
   import Tree.Guards
-  import Map, only: [merge: 2]
+  import Tree.Validator
+  import Map, only: [put: 3]
   import Enum, only: [filter: 2]
   import Logger, only: [error: 1]
   import List, only: [flatten: 1]
   import Regex, only: [compile: 1]
-  import String, only: [to_atom: 1]
-  import Mix.Config, only: [persist: 1]
-  import Application, only: [get_env: 3]
-  import Tree.Validator, only: [process: 2]
+  import Application, only: [get_env: 3, put_env: 4]
+  import Tree.Utils, only: [deep_merge: 2, deep_set: 3]
+  import String, only: [to_atom: 1, split: 2, replace: 3]
 
   import Jason,
     only: [decode!: 1, encode!: 2]
@@ -18,255 +18,122 @@ defmodule Tree.Config do
   import File,
     only: [read!: 1, write!: 2]
 
+  @sep "/#/"
+
   @config %{
-    "leafs" => %{
-      "branches" => %{
-        "title" => "map [branches]",
-        "type" => "map",
-        "required" => true
-      },
-      "settings" => %{
-        "title" => "app [settings]",
-        "type" => "map"
-      }
+    "branches" => %{
+      "title" => "map [branches]",
+      "type" => "map",
+      "required" => true
+    },
+    "settings" => %{
+      "title" => "app [settings]",
+      "type" => "map"
     }
   }
 
   @branch %{
-    "leafs" => %{
-      "title" => %{
-        "title" => "branch [title]",
-        "type" => "string",
-        "required" => true
-      },
-      "titles" => %{
-        "title" => "branch [titles]",
-        "type" => "string",
-        "required" => true
-      },
-      "leafs" => %{
-        "title" => "branch [leafs]",
-        "type" => "map",
-        "required" => true
-      },
-      "rules" => %{
-        "title" => "branch [rules]",
-        "type" => "map",
-        "required" => true
-      },
-      "type" => %{
-        "title" => "branch [type]",
-        "type" => "string",
-        "required" => true,
-        "arr" => [
-          "tree",
-          "bag",
-          "rel"
-        ]
-      }
-    }
-  }
-
-  @rules %{
-    "leafs" => %{
-      "get_all" => %{
-        "title" => "Get all rule [get_all]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "get_grp" => %{
-        "title" => "Get group rule [get_grp]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "get_own" => %{
-        "title" => "Get own rule [get_own]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "post_own" => %{
-        "title" => "Post own rule [post_own]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "post_grp" => %{
-        "title" => "Post group rule [post_grp]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "patch_all" => %{
-        "title" => "Patch all rule [patch_all]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "patch_grp" => %{
-        "title" => "Patch group rule [patch_grp]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "patch_own" => %{
-        "title" => "Patch own rule [patch_own]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "delete_all" => %{
-        "title" => "Delete all rule [delete_all]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "delete_grp" => %{
-        "title" => "Delete group rule [delete_grp]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      },
-      "delete_own" => %{
-        "title" => "Delete own rule [delete_own]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "required" => true
-      }
+    "api_title" => %{
+      "title" => "branch [api_title]",
+      "type" => "string",
+      "required" => true
+    },
+    "api_type" => %{
+      "title" => "branch [api_type]",
+      "type" => "string",
+      "arr" => [
+        "tree",
+        "bag"
+      ]
     }
   }
 
   @leaf %{
-    "leafs" => %{
-      "title" => %{
-        "title" => "value [title]",
-        "type" => "string",
-        "required" => true
-      },
-      "type" => %{
-        "title" => "value [type]",
-        "type" => "string",
-        "required" => true,
-        "arr" => [
-          "integer",
-          "number",
-          "string",
-          "array",
-          "bool",
-          "map"
-        ]
-      },
-      "struct" => %{
-        "title" => "value [struct]",
-        "type" => "map",
-        "struct" => %{
-          "keys" => [
-            "type",
-            "min",
-            "max",
-            "keys"
-          ]
-        }
-      },
-      "required" => %{
-        "title" => "is value [required]",
-        "type" => "bool"
-      },
-      "default" => %{
-        "title" => "[default] value",
-        "type" => "any"
-      },
-      "min" => %{
-        "title" => "value [min]",
-        "type" => "integer"
-      },
-      "max" => %{
-        "title" => "value [max]",
-        "type" => "integer"
-      },
-      "arr" => %{
-        "title" => "value [arr]ay",
-        "type" => "array"
-      },
-      "re" => %{
-        "title" => "value [re]gex",
-        "type" => "string"
-      }
+    "title" => %{
+      "title" => "value [title]",
+      "type" => "string"
+    },
+    "type" => %{
+      "title" => "value [type]",
+      "type" => "string",
+      "required" => true,
+      "arr" => [
+        "integer",
+        "number",
+        "string",
+        "array",
+        "bool",
+        "map"
+      ]
+    },
+    "struct" => %{
+      "title" => "value [struct]",
+      "type" => "map"
+    },
+    "required" => %{
+      "title" => "is value [required]",
+      "type" => "bool"
+    },
+    "default" => %{
+      "title" => "[default] value",
+      "type" => "any"
+    },
+    "min" => %{
+      "title" => "value [min]",
+      "type" => "integer"
+    },
+    "max" => %{
+      "title" => "value [max]",
+      "type" => "integer"
+    },
+    "impossible" => %{
+      "title" => "value [impossible]",
+      "type" => "array"
+    },
+    "possible" => %{
+      "title" => "value [possible]",
+      "type" => "array"
+    },
+    "re" => %{
+      "title" => "value [re]gex",
+      "type" => "string"
     }
   }
 
   @settings %{
-    "leafs" => %{
-      "port" => %{
-        "title" => "app [port]",
-        "type" => "integer",
-        "min" => 80
-      },
-      "host" => %{
-        "title" => "app [host]",
-        "type" => "string"
-      },
-      "secret" => %{
-        "title" => "JWT [secret]",
-        "type" => "string"
-      },
-      "events_timeout" => %{
-        "title" => "idle [events_timeout]",
-        "type" => "integer",
-        "min" => 0
-      },
-      "roles" => %{
-        "title" => "user [roles]",
-        "type" => "array",
-        "struct" => %{
-          "type" => "string"
-        },
-        "min" => 1
-      },
-      "client_entry" => %{
-        "title" => "[client_entry] point",
-        "type" => "string"
-      },
-      "client_assets" => %{
-        "title" => "[client_assets] directory",
-        "type" => "string"
-      },
-      "upload_dir" => %{
-        "title" => "files [upload_dir]",
-        "type" => "string"
-      },
-      "registration" => %{
-        "title" => "user [registration]",
-        "type" => "bool"
-      },
-      "default_role" => %{
-        "title" => "user [default_role]",
-        "type" => "string"
-      }
+    "port" => %{
+      "title" => "app [port]",
+      "type" => "integer",
+      "min" => 80
+    },
+    "host" => %{
+      "title" => "app [host]",
+      "type" => "string"
+    },
+    "secret" => %{
+      "title" => "JWT [secret]",
+      "type" => "string"
+    },
+    "events_timeout" => %{
+      "title" => "idle [events_timeout]",
+      "type" => "integer",
+      "min" => 0
+    },
+    "client_entry" => %{
+      "title" => "[client_entry] point",
+      "type" => "string"
+    },
+    "client_assets" => %{
+      "title" => "[client_assets] directory",
+      "type" => "string"
+    },
+    "upload_dir" => %{
+      "title" => "files [upload_dir]",
+      "type" => "string"
+    },
+    "registration" => %{
+      "title" => "user [registration]",
+      "type" => "bool"
     }
   }
 
@@ -278,28 +145,26 @@ defmodule Tree.Config do
       "upload_dir" => "./priv/upload/",
       "secret" => "!!!CHANGE_ME!!!",
       "events_timeout" => 300_000,
-      "default_role" => "user",
       "registration" => true,
       "host" => "localhost",
-      "port" => 8080,
-      "roles" => [
-        "anon",
-        "user",
-        "manager",
-        "admin"
-      ]
+      "port" => 8080
     }
   }
 
-  defp apply_config(old \\ %{}, new),
-    do: persist(%{forrest: merge(old, new)})
+  defp apply_config(old \\ %{}, new) do
+    for {k, v} <- deep_merge(old, new) do
+      put_env(:forrest, k, v, persistent: true)
+    end
+  end
 
   def init do
     config = load()
     errors = errors(config)
 
     if is_empty_list(errors) do
-      merge(config)
+      deep_merge(@default_config, config)
+      |> save()
+      |> merge()
       |> apply_config()
     else
       error(inspect(errors))
@@ -311,29 +176,38 @@ defmodule Tree.Config do
     with config <- load(config_json),
          [] <- errors(config),
          full <- merge(config),
-         :ok <- save(config) do
+         _ <- save(config) do
       apply_config(full)
     else
       e -> {:error, e}
     end
   end
 
+  defp add_outside(type, branch, leaf0, value) do
+    leaf = replace(leaf0, @sep <> "struct", "")
+    add(type, branch, leaf, value)
+  end
+
+  defp add_inside(type, branch, leaf, value0) do
+    value = %{type => value0}
+    add(type, branch, leaf, value)
+  end
+
   defp add(type, branch, leaf \\ nil, value) do
     current = get(type)
 
     if leaf do
-      br = merge(current[branch] || %{}, %{leaf => value})
-      %{type => merge(current, %{branch => br})}
+      br = deep_set(split(leaf, @sep), value, current[branch])
+      %{type => deep_merge(current, %{branch => br})}
     else
-      %{type => merge(current, %{branch => value})}
+      %{type => deep_merge(current, %{branch => value})}
     end
     |> apply_config()
   end
 
   defp load(config_json \\ nil) do
     try do
-      (config_json ||
-         read!("config.json"))
+      (config_json || read!("config.json"))
       |> decode!()
     rescue
       e -> error("Invalid config, " <> inspect(e))
@@ -344,7 +218,7 @@ defmodule Tree.Config do
     try do
       json = encode!(config, pretty: true)
       write!("config.json", json)
-      :ok
+      config
     rescue
       e ->
         error = "Config not saved, " <> inspect(e)
@@ -354,45 +228,76 @@ defmodule Tree.Config do
   end
 
   defp merge(config) do
-    settings =
-      merge(
-        @default_config["settings"],
-        config["settings"] || %{}
-      )
-
-    defaults = get("defaults")
-    regexps = get("regexps")
-    types = get("types")
-
     branches =
       for {key, branch} <- config["branches"], into: %{} do
+        compile =
+          %{}
+          |> deep_merge(get("server_time")[key] || %{})
+          |> deep_merge(get("func")[key] || %{})
+          |> deep_merge(get("uid")[key] || %{})
+          |> deep_merge(get("gid")[key] || %{})
+
         {key,
          branch
-         |> merge(%{"default" => defaults[key]})
-         |> merge(%{"regexp" => regexps[key]})
-         |> merge(%{"type" => types[key]})}
+         |> deep_merge(get("regexp")[key])
+         |> deep_merge(%{"compile" => compile})
+         |> deep_merge(%{"defaults" => get("default")[key]})
+         |> deep_merge(%{"type" => get("types")[key]})}
       end
 
     %{
-      "settings" => settings,
+      "settings" => config["settings"],
       "branches" => branches
     }
   end
 
+  defp compile(branch, leaf, name) do
+    with regexp <- leaf["re"],
+         false <- is_nil(regexp),
+         {:ok, re} <- compile(regexp) do
+      add_inside("regexp", branch, name, re)
+    end
+
+    unless leaf["default"] |> is_nil do
+      add_outside("default", branch, name, leaf["default"])
+    end
+
+    if leaf["type"] == "server_time" do
+      add_outside("server_time", branch, name, :time)
+    end
+
+    if leaf["type"] == "uid" do
+      add_outside("uid", branch, name, :uid)
+    end
+
+    if leaf["type"] == "gid" do
+      add_outside("gid", branch, name, :gid)
+    end
+
+    if leaf["type"] == "func" && is_binary(leaf["func"]) do
+      f_name = :"#{branch}_#{replace(name, @sep, "_")}"
+
+      if Tree.Compiler.compile(leaf["func"], f_name) == :ok do
+        add_outside("func", branch, name, f_name)
+      end
+    end
+
+    if leaf["type"] == "map" && is_map(leaf["struct"]) do
+      for {subname, subleaf} <- leaf["struct"], is_map(subleaf) do
+        compile(branch, subleaf, "#{subname}#{@sep}struct#{@sep}#{name}")
+      end
+    end
+
+    if !leaf["compiled"] && leaf["type"] == "array" && is_map(leaf["struct"]) do
+      compile(branch, put(leaf, "compiled", true)["struct"], "struct#{@sep}#{name}")
+    end
+  end
+
   defp errors({:leafs, leafs, branch}) do
-    for {name, leaf} <- leafs do
-      case process(leaf, @leaf) do
+    for {name, leaf} <- leafs, is_map(leaf) do
+      case process({leaf, @leaf}) do
         {:ok, _} ->
-          with regexp <- leaf["re"],
-               false <- is_nil(regexp),
-               {:ok, re} <- compile(regexp) do
-            add("regexps", branch, name, re)
-          end
-
-          if default = leaf["default"] do
-            add("defaults", branch, name, default)
-          end
-
+          compile(branch, leaf, name)
           nil
 
         {:error, errors} ->
@@ -402,7 +307,7 @@ defmodule Tree.Config do
   end
 
   defp errors({:other, model, name, schema}) do
-    case process(model, schema) do
+    case process({model, schema}) do
       {:ok, _} -> [nil]
       {:error, errors} -> [%{name => errors}]
     end
@@ -410,12 +315,10 @@ defmodule Tree.Config do
 
   defp errors({:branches, branches}) do
     for {name, branch} <- branches do
-      case(process(branch, @branch)) do
+      case(process({branch, @branch})) do
         {:ok, _} ->
-          add("types", name, branch["type"] |> to_atom)
-
-          errors({:leafs, branch["leafs"], name}) ++
-            errors({:other, branch["rules"], name, @rules})
+          add("types", name, (branch["api_type"] || "tree") |> to_atom)
+          errors({:leafs, branch, name})
 
         {:error, errors} ->
           %{name => errors}
@@ -424,7 +327,7 @@ defmodule Tree.Config do
   end
 
   defp errors(config) do
-    case process(config, @config) do
+    case process({config, @config}) do
       {:error, errors} ->
         [%{"config" => errors}]
 
@@ -447,8 +350,7 @@ defmodule Tree.Config do
 
   def get(key), do: get_env(:forrest, key, %{})
   def env(key), do: get("settings")[key]
-  def regexp(branch, leaf), do: get("regexps")[branch][leaf]
-  def default(branch), do: get("defaults")[branch]
-  def schema(branch), do: get("branches")[branch]
+  def default(branch), do: get("default")[branch]
   def type(branch), do: get("types")[branch]
+  def schema(branch), do: get("branches")[branch]
 end

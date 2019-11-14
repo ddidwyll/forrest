@@ -1,0 +1,93 @@
+
+order: {
+      "leafs": {
+        "table": {
+          "min": 32,
+          "max": 32,
+          "required": true,
+          "title": "категория",
+          "type": "string",
+          "re": "^[a-z0-9]*$"
+        },
+        "a": {
+          "type": "map",
+          "title": "клиент а",
+          "struct": {
+            "keys": ["name", "price", "pts"]
+          }
+        },
+        "b": {
+          "type": "map",
+          "title": "клиент б",
+          "struct": {
+            "keys": ["name", "price", "pts"]
+          }
+        },
+        "c": {
+          "type": "map",
+          "title": "клиент в",
+          "struct": {
+            "keys": ["name", "price", "pts"]
+          }
+        },
+        "d": {
+          "type": "map",
+          "title": "клиент г",
+          "struct": {
+            "keys": ["name", "price", "pts"]
+          }
+        },
+        "e": {
+          "type": "map",
+          "title": "клиент д",
+          "struct": {
+            "keys": ["name", "price", "pts"]
+          }
+        },
+        "f": {
+          "type": "map",
+          "title": "клиент е",
+          "struct": {
+            "keys": ["name", "price", "pts"]
+          }
+        }
+      },
+      "rules": {
+        "delete_all": [
+          "admin"
+        ],
+        "delete_grp": [
+          "manager"
+        ],
+        "delete_own": [
+          "manager"
+        ],
+        "get_all": [
+          "user"
+        ],
+        "get_grp": [
+          "user"
+        ],
+        "get_own": [
+          "user"
+        ],
+        "patch_all": [
+          "admin"
+        ],
+        "patch_grp": [
+          "manager"
+        ],
+        "patch_own": [
+          "user"
+        ],
+        "post_grp": [
+          "user"
+        ],
+        "post_own": [
+          "user"
+        ]
+      },
+      "title": "заказ",
+      "titles": "заказы",
+      "type": "tree"
+    }

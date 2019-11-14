@@ -5,12 +5,12 @@ defmodule Tree.Auth do
   use Joken.Config
 
   import Tree.Guards
+  import Tree.Validator
   import Map, only: [put: 3]
   import Jason, only: [encode!: 1]
   import Tree.Config, only: [env: 1]
   import Joken, only: [current_time: 0]
   import Joken.Signer, only: [create: 2]
-  import Tree.Validator, only: [process: 2]
 
   import Pbkdf2,
     only: [hash_pwd_salt: 1, verify_pass: 2]

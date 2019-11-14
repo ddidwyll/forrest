@@ -17,14 +17,30 @@ defmodule Tree.Router do
   end
 
   def routes do
-    routes = [
-      {"/assets/[...]", :cowboy_static, {:dir, env("client_assets")}},
-      {"/upload/[...]", :cowboy_static, {:dir, env("upload_dir")}},
-      {"/", :cowboy_static, {:file, env("client_entry")}},
-      {"/events/:user/[:last_id]", Tree.Events.Route, nil},
-      {"/:type/:branch/[:to]/[:from]", Tree.Route, nil}
+    [
+      {env("host"),
+       [
+         {"/[...]", :cowboy_static, {:file, env("client_entry")}}
+       ]},
+      {"assets." <> env("host"),
+       [
+         {"/[...]", :cowboy_static, {:dir, env("client_assets")}}
+       ]},
+      {"upload." <> env("host"),
+       [
+         {"/[...]", :cowboy_static, {:dir, env("upload_dir")}}
+       ]},
+      {"events." <> env("host"),
+       [
+         {"/batch/[:last_id]", Tree.Events.Route, nil},
+         {"/stream/:user/[:last_id]", Tree.Events.Stream, nil}
+       ]},
+      {"tree." <> env("host"),
+       [
+         {"/batch/:branch/[:to]/[:from]", Tree.Batch, nil},
+         {"/rest/:branch/[:to]/[:from]", Tree.Rest, nil}
+       ]}
     ]
-
-    compile([{env("host"), routes}])
+    |> compile()
   end
 end

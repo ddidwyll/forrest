@@ -1,134 +1,27 @@
 {
   "branches": {
-    "company": {
-      "leafs": {
-        "name": {
-          "default": "foo",
-          "max": 80,
-          "required": true,
-          "title": "name",
-          "type": "string"
-        }
-      },
-      "rules": {
-        "delete_all": [
-          "admin"
-        ],
-        "delete_grp": [
-          "manager"
-        ],
-        "delete_own": [
-          "manager"
-        ],
-        "get_all": [
-          "user"
-        ],
-        "get_grp": [
-          "user"
-        ],
-        "get_own": [
-          "user"
-        ],
-        "patch_all": [
-          "admin"
-        ],
-        "patch_grp": [
-          "manager"
-        ],
-        "patch_own": [
-          "user"
-        ],
-        "post_grp": [
-          "user"
-        ],
-        "post_own": [
-          "user"
-        ]
-      },
-      "title": "company",
-      "titles": "companies",
-      "type": "tree"
-    },
-    "deal": {
-      "leafs": {
-        "company": {
-          "arr": [
-            "foo",
-            "bar"
-          ],
-          "max": 80,
-          "re": "bar",
-          "required": true,
-          "title": "company",
-          "type": "string"
+    "obj": {
+      "api_title": "api_title",
+      "arr": {
+        "struct": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "default": "N|A"
+          }
         },
-        "created": {
-          "freeze": true,
-          "required": true,
-          "title": "created",
-          "type": "integer"
-        },
-        "value": {
-          "default": 100,
-          "min": 0,
-          "title": "value",
-          "type": "integer"
-        }
-      },
-      "rules": {
-        "delete_all": [
-          "admin"
-        ],
-        "delete_grp": [
-          "manager"
-        ],
-        "delete_own": [
-          "manager"
-        ],
-        "get_all": [
-          "user"
-        ],
-        "get_grp": [
-          "user"
-        ],
-        "get_own": [
-          "user"
-        ],
-        "patch_all": [
-          "admin"
-        ],
-        "patch_grp": [
-          "manager"
-        ],
-        "patch_own": [
-          "user"
-        ],
-        "post_grp": [
-          "user"
-        ],
-        "post_own": [
-          "user"
-        ]
-      },
-      "title": "deal",
-      "titles": "deals",
-      "type": "tree"
+        "type": "array"
+      }
     }
   },
   "settings": {
     "client_assets": "./client/public/",
     "client_entry": "./client/public/index.html",
-    "default_role": "user",
     "events_timeout": 300000,
     "host": "localhost",
     "port": 8080,
     "registration": true,
-    "roles": [
-      "anon",
-      "user",
-      "manager",
-      "admin"
-    ],
     "secret": "!!!CHANGE_ME!!!",
     "upload_dir": "./priv/upload/"
   }

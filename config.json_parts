@@ -1,0 +1,184 @@
+{
+  "branches": {
+    "type": {
+      "leafs": {
+        "name": {
+          "max": 80,
+          "required": true,
+          "title": "name",
+          "type": "string",
+          "re": "^[a-zA-Zа-яА-Я0-9]*$"
+        }
+      },
+      "rules": {
+        "delete_all": [
+          "admin"
+        ],
+        "delete_grp": [
+          "manager"
+        ],
+        "delete_own": [
+          "manager"
+        ],
+        "get_all": [
+          "user"
+        ],
+        "get_grp": [
+          "user"
+        ],
+        "get_own": [
+          "user"
+        ],
+        "patch_all": [
+          "admin"
+        ],
+        "patch_grp": [
+          "manager"
+        ],
+        "patch_own": [
+          "user"
+        ],
+        "post_grp": [
+          "user"
+        ],
+        "post_own": [
+          "user"
+        ]
+      },
+      "title": "тип",
+      "titles": "типы",
+      "type": "tree"
+    },
+    "sug": {
+      "leafs": {
+        "name": {
+          "max": 80,
+          "required": true,
+          "title": "name",
+          "type": "string",
+          "re": "^[a-zA-Zа-яА-Я0-9]*$"
+        },
+        "type": {
+          "min": 32,
+          "max": 32,
+          "required": true,
+          "title": "type",
+          "type": "string",
+          "re": "^[a-z0-9]*$"
+        }
+      },
+      "rules": {
+        "delete_all": [
+          "admin"
+        ],
+        "delete_grp": [
+          "manager"
+        ],
+        "delete_own": [
+          "manager"
+        ],
+        "get_all": [
+          "user"
+        ],
+        "get_grp": [
+          "user"
+        ],
+        "get_own": [
+          "user"
+        ],
+        "patch_all": [
+          "admin"
+        ],
+        "patch_grp": [
+          "manager"
+        ],
+        "patch_own": [
+          "user"
+        ],
+        "post_grp": [
+          "user"
+        ],
+        "post_own": [
+          "user"
+        ]
+      },
+      "title": "предложение",
+      "titles": "предложения",
+      "type": "tree"
+    },
+    "req": {
+      "leafs": {
+        "name": {
+          "max": 80,
+          "required": true,
+          "title": "name",
+          "type": "string",
+          "re": "^[a-zA-Zа-яА-Я0-9]*$"
+        },
+        "type": {
+          "min": 32,
+          "max": 32,
+          "required": true,
+          "title": "type",
+          "type": "string",
+          "re": "^[a-z0-9]*$"
+        }
+      },
+      "rules": {
+        "delete_all": [
+          "admin"
+        ],
+        "delete_grp": [
+          "manager"
+        ],
+        "delete_own": [
+          "manager"
+        ],
+        "get_all": [
+          "user"
+        ],
+        "get_grp": [
+          "user"
+        ],
+        "get_own": [
+          "user"
+        ],
+        "patch_all": [
+          "admin"
+        ],
+        "patch_grp": [
+          "manager"
+        ],
+        "patch_own": [
+          "user"
+        ],
+        "post_grp": [
+          "user"
+        ],
+        "post_own": [
+          "user"
+        ]
+      },
+      "title": "запрос",
+      "titles": "запросы",
+      "type": "tree"
+    }
+  },
+  "settings": {
+    "client_assets": "./client/public/",
+    "client_entry": "./client/public/index.html",
+    "default_role": "user",
+    "events_timeout": 300000,
+    "host": "localhost",
+    "port": 36773,
+    "registration": true,
+    "roles": [
+      "guest",
+      "user",
+      "manager",
+      "admin"
+    ],
+    "secret": "!!!CHANGE_ME!!!",
+    "upload_dir": "./priv/upload/"
+  }
+}
