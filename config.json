@@ -6,6 +6,9 @@
         "struct": {
           "a": {
             "type": "string"
+          },
+          "b": {
+            "default": "N|A"
           }
         },
         "type": "array"

@@ -45,8 +45,8 @@ defmodule Tree.Validator do
   defp wrong_type?(_, _), do: true
 
   defp collapse(val) when is_map(val), do: val |> values |> collapse
-  defp collapse(val) when is_list(val), do: val |> filter(& !!collapse(&1)) |> join(", ")
-  defp collapse(val) when is_binary(val), do: if val != "", do: val, else: nil
+  defp collapse(val) when is_list(val), do: val |> filter(&(!!collapse(&1))) |> join(", ")
+  defp collapse(val) when is_binary(val), do: if(val != "", do: val, else: nil)
   defp collapse(val), do: to_string(val) |> collapse
 
   defp struct?(val, struct) when is_list(val) do

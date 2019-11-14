@@ -90,6 +90,7 @@ defmodule Tree.Main do
       {:error, e} ->
         IO.inspect({"validate", e})
         {:error, req, %{state | out: e}}
+
       err ->
         IO.inspect({"validate", err})
         {:error, req, state}
